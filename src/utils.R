@@ -13,8 +13,8 @@ preprocess_data_file <- function(experiment_name, column_names, vars_to_factor, 
   #' @param ceiling_val float Value to set failed runs to
 
   # Define data directories data and create as necessary
-  raw_data_dir = paste0("~/apc_data/f31/", experiment_name)
-  clean_data_dir = paste0("data/exp_pro/")
+  raw_data_dir = file.path("data", "exp_raw", experiment_name, "data")
+  clean_data_dir = file.path("data", "exp_pro")
 
   # Collect data into data frame
   data_files = list.files(raw_data_dir)
@@ -39,8 +39,7 @@ preprocess_data_file <- function(experiment_name, column_names, vars_to_factor, 
   # Factorize subject
   dat$subj = factor(dat$subj)
   # Save clean version to disk
-  save(file=paste0(clean_data_dir, "aim3_", experiment_name, "_clean_data.RData"), dat)
-  write.csv(dat, file=paste0(clean_data_dir, "aim3_", experiment_name, "_clean_data.csv"))
+  write.csv(dat, file=file.path(clean_data_dir, paste0(experiment_name, "_clean_data.csv")))
 }
 
 preprocess_data_file_2024 <- function(experiment_name, column_names, ceiling_val){
@@ -52,8 +51,8 @@ preprocess_data_file_2024 <- function(experiment_name, column_names, ceiling_val
   #' @param ceiling_val float Value to set failed runs to
 
   # Define data directories data and create as necessary
-  raw_data_dir = paste0("C:/Users/dguest2/Downloads/f31/", experiment_name, "/data")
-  clean_data_dir = paste0("data/exp_pro/")
+  raw_data_dir = file.path("data", "exp_raw", experiment_name, "data") 
+  clean_data_dir = file.path("data", "exp_pro")
 
   # Collect data into data frame
   data_files = list.files(raw_data_dir)
@@ -78,8 +77,7 @@ preprocess_data_file_2024 <- function(experiment_name, column_names, ceiling_val
   dat$subj = factor(dat$subj)
 
   # Save clean version to disk
-  save(file=paste0(clean_data_dir, experiment_name, "_clean_data.RData"), dat)
-  write.csv(dat, file=paste0(clean_data_dir, experiment_name, "_clean_data.csv"))
+  write.csv(dat, file=file.path(clean_data_dir, paste0(experiment_name, "_clean_data.csv")))
 }
 
 load_data <- function(experiment_code, experiment_name, filter_xids=TRUE) {

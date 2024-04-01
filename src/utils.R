@@ -39,6 +39,7 @@ preprocess_data_file <- function(experiment_name, column_names, vars_to_factor, 
   # Factorize subject
   dat$subj = factor(dat$subj)
   # Save clean version to disk
+  save(dat, file=file.path(clean_data_dir, paste0(experiment_name, "_clean_data.RData")))
   write.csv(dat, file=file.path(clean_data_dir, paste0(experiment_name, "_clean_data.csv")))
 }
 
@@ -77,6 +78,7 @@ preprocess_data_file_2024 <- function(experiment_name, column_names, ceiling_val
   dat$subj = factor(dat$subj)
 
   # Save clean version to disk
+  save(dat, file=file.path(clean_data_dir, paste0(experiment_name, "_clean_data.RData")))
   write.csv(dat, file=file.path(clean_data_dir, paste0(experiment_name, "_clean_data.csv")))
 }
 

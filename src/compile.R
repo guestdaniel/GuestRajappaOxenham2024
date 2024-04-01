@@ -1,16 +1,6 @@
 # This script takes data files generated using process.R and concatenates them into larger, more useful data files
 source("src/utils.R")
 
-
-# experiment_codes = c("0.1", "1.1", "1.2", "1.1", "1.2")
-# experiment_names = c("0.1_audibility", "1.1_profile_analysis", "1.2_ripple_discrimination", "1.1_profile_analysis_extra_2024", "1.2_ripple_discrimination_extra_2024")
-
-# for (i in 1:5) {
-#     data = load_data(experiment_codes[i], experiment_names[i])
-#     data = data[!is.nan(data$threshold), ]
-#     write.csv(file=paste0("data/exp_pro/", "aim3_", experiment_names[i], ".csv"), data)
-# }
-
 # Compile profile analysis data (original experiment)
 load(file.path("data", "exp_pro", "1.1c_profile_analysis_control_clean_data.RData"))  # load unroved data
 data_unroved = dat

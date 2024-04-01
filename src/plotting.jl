@@ -1,8 +1,8 @@
-export plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b
+export plot_fig_thr, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b
 
-function plot_measure_thresholds()
+function plot_fig_thr()
     # Load data
-    df = DataFrame(CSV.File("data/exp_pro/0.2_measure_thresholds_extra_2024_clean_data.csv"));
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.2_measure_thresholds_extra_2024_clean_data.csv")))
 
     # Analyze into means
     df_ind = @chain df begin
@@ -17,195 +17,28 @@ function plot_measure_thresholds()
     end
 
     # Plot
-    fig = Figure()
-    ax = Axis(fig[1, 1])
-    scatter!(ax, [1, 2, 3], df_avg.threshold_mean[1:3]; color=freq_colors["low"])
-    errorbars!(ax, [1, 2, 3], df_avg.threshold_mean[1:3], df_avg.threshold_error[1:3]; color=freq_colors["low"], whiskerwidth=20.0)
-    scatter!(ax, [5, 6, 7], df_avg.threshold_mean[4:6]; color=freq_colors["high"])
-    errorbars!(ax, [5, 6, 7], df_avg.threshold_mean[4:6], df_avg.threshold_error[4:6]; color=freq_colors["high"], whiskerwidth=20.0)
+    fig = Figure(; size=(500, 400))
+    ax = Axis(fig[1, 1]; xminorticksvisible=false)
+
+    # Loop over frequencies
+    for (freq, offset) in zip([300, 487, 798, 6100, 9909, 16100], [1, 2, 3, 5, 6, 7])
+        # Subset data
+        ss_ind = @subset(df_ind, :freq .== freq)
+        ss_avg = @subset(df_avg, :freq .== freq)
+
+        # Plot means
+        color_temp = freq < 6100 ? freq_colors["low"] : freq_colors["high"]
+        scatter!(ax, [offset], ss_avg.threshold_mean; color=color_temp, markersize=15.0)
+        errorbars!(ax, [offset], ss_avg.threshold_mean, ss_avg.threshold_error; color=color_temp, whiskerwidth=20.0)
+
+        # Plot individual data
+        n_point = length(ss_ind.threshold)
+        scatter!(ax, fill(offset, n_point) .+ 0.35 .+ randn(n_point) .* 0.05, ss_ind.threshold; color=color_temp)
+    end
     ax.xticks = ([1, 2, 3, 5, 6, 7], string.(df_avg.freq))
     ylims!(ax, 20.0, 60.0)
     ax.xlabel = "Frequency (Hz)"
     ax.ylabel = "Threshold (dB SPL)"
-    fig
-end
-
-function plot_profile_analysis_2024()
-    # Load data
-    df_control = DataFrame(CSV.File("data/exp_pro/1.1c_profile_analysis_control_extra_2024_clean_data.csv"));
-    df_test = DataFrame(CSV.File("data/exp_pro/1.1_profile_analysis_extra_2024_clean_data.csv"));
-    df_control[!, :condition] .= "Fixed-level"
-    df_test[!, :condition] .= "Roved-level"
-    df = vcat(df_control, df_test)
-
-    # Filter to only be complete datasets
-    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x14", "x15", "x16", "x17"])))
-
-    # Add information about which was completed first for each person
-    # Here, a 1 indicates control was completed first, a 2 indicates PA was completed first
-    order = Dict(
-        "x01" => 2,
-        "x02" => 1,
-        "x07" => 2,
-        "x09" => 2,
-        "x14" => 2,
-        "x15" => 1,
-        "x16" => 1,
-        "x17" => 1
-    )
-    df[!, :order] .= getindex.(Ref(order), df.subj)
-
-    # Analyze into means
-    df_ind = @chain df begin
-        @orderby(:freq, :order, :condition)
-        groupby([:freq, :condition, :order, :subj])
-        @combine(:threshold = mean(:threshold))
-    end
-    df_avg = @chain df_ind begin
-        groupby([:freq, :condition, :order])
-        @combine(:threshold_mean = mean(:threshold), :threshold_error = 1.96*std(:threshold)/sqrt(length(:threshold)))
-    end
-
-    # Plot
-    fig = Figure(; size=(800, 500))
-    for order in 1:2
-        # Create new axis
-        ax = Axis(fig[1, order])
-
-        # Subset and plot means (low freq)
-        ss = @subset(df_avg, :freq .== 300, :order .== order)
-        scatter!(ax, [1, 2], ss.threshold_mean; color=freq_colors["low"], markersize=20.0)
-
-        # Subset and plot individual data
-        ss_ind = @subset(df_ind, :freq .== 300, :order .== order)
-        ss_ind_fl = @subset(ss_ind, :condition .== "Fixed-level")
-        ss_ind_rl = @subset(ss_ind, :condition .== "Roved-level")
-        scatter!(ax, fill(1.3, nrow(ss_ind_fl)), ss_ind_fl.threshold; color=freq_colors["low"])
-        scatter!(ax, fill(2.3, nrow(ss_ind_rl)), ss_ind_rl.threshold; color=freq_colors["low"])
-
-        # Subset and plot means (high freq)
-        ss = @subset(df_avg, :freq .== 6100, :order .== order)
-        scatter!(ax, [4, 5], ss.threshold_mean; color=freq_colors["high"], markersize=20.0)
-
-        # Subset and plot individaul data
-        ss_ind = @subset(df_ind, :freq .== 6100, :order .== order)
-        ss_ind_fl = @subset(ss_ind, :condition .== "Fixed-level")
-        ss_ind_rl = @subset(ss_ind, :condition .== "Roved-level")
-        scatter!(ax, fill(4.3, nrow(ss_ind_fl)), ss_ind_fl.threshold; color=freq_colors["high"])
-        scatter!(ax, fill(5.3, nrow(ss_ind_rl)), ss_ind_rl.threshold; color=freq_colors["high"])
-
-        # Label things
-        ax.xlabel = "Condition"
-        ax.ylabel = "Threshold (dB SRS)"
-        ylims!(ax, -10.0, 15.0)
-        ax.xticks = ([1, 2, 4, 5], ["Fixed-level", "Roved-level", "Fixed-level", "Roved-level"])
-        ax.xticklabelrotation = pi/4
-        ax.title = order == 1 ? "Fixed-level first (old order)" : "Roved-level first"
-    end
-   fig
-end
-
-function plot_profile_analysis_2024_learning()
-    # Load data
-    df_control = DataFrame(CSV.File("data/exp_pro/1.1c_profile_analysis_control_extra_2024_clean_data.csv"));
-    df_test = DataFrame(CSV.File("data/exp_pro/1.1_profile_analysis_extra_2024_clean_data.csv"));
-    df_control[!, :condition] .= "Fixed-level"
-    df_test[!, :condition] .= "Roved-level"
-    df = vcat(df_control, df_test)
-
-    # Filter to only be complete datasets
-    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x14", "x15", "x16", "x17"])))
-
-    # Add block number information
-    df[!, :block] .= 0
-    for subj in unique(df.subj)
-        for freq in [300, 6100]
-            for condition in ["Fixed-level", "Roved-level"]
-                idxs = (df.subj .== subj) .& (df.freq .== freq) .& (df.condition .== condition)
-                df[idxs, :block] .= 1:nrow(df[idxs, :])
-            end
-        end
-    end
-
-    # Add information about which was completed first for each person
-    # Here, a 1 indicates control was completed first, a 2 indicates PA was completed first
-    order = Dict(
-        "x01" => 2,
-        "x02" => 1,
-        "x07" => 2,
-        "x09" => 2,
-        "x14" => 2,
-        "x15" => 1,
-        "x16" => 1,
-        "x17" => 1
-    )
-    df[!, :order] .= getindex.(Ref(order), df.subj)
-
-    # Map 1,2 -> "Fixed-level first", "Roved-level first"
-    mapper = Dict(1 => "Fixed-level first", 2 => "Roved-level first")
-    df.order .= getindex.(Ref(mapper), df.order)
-
-    # Determine all unique condition combinations
-    conds = Iterators.product(unique(df.freq), unique(df.condition), unique(df.order))
-    conds = collect(conds)
-    conds = conds[[2, 4, 6, 8, 1, 3, 5, 7]]
-    fig = Figure(; size=(2500, 300))
-    for (idx_cond, cond) in enumerate(conds)
-        (freq, condition, order) = cond
-        ax = Axis(fig[1, idx_cond])
-        for subj in unique(df.subj)
-            ss = @subset(df, :freq .== freq, :condition .== condition, :order .== order, :subj .== subj)
-            scatter!(ax, ss.block, ss.threshold)
-            lines!(ax, ss.block, ss.threshold)
-            ax.title = join(cond, "  ")
-            ylims!(ax, -10.0, 15.0)
-            ax.xticks = [1, 2, 3, 4, 5, 6]
-        end
-    end
-    fig
-end
-
-function plot_ripples_2024()
-    # Load data
-    df_control = DataFrame(CSV.File("data/exp_pro/1.2c_ripple_discrimination_control_extra_2024_clean_data.csv"));
-    df_test = DataFrame(CSV.File("data/exp_pro/1.2_ripple_discrimination_extra_2024_clean_data.csv"));
-    df_control[!, :condition] .= "Detection"
-    df_test[!, :condition] .= "Discrimination"
-    df = vcat(df_control, df_test)
-
-    # Compute individual and group means
-    df_ind = @chain df begin
-        @orderby(:condition)
-        groupby([:freq, :condition, :subj])
-        @combine(:threshold = mean(:threshold))
-    end
-    df_avg = @chain df_ind begin
-        groupby([:freq, :condition])
-        @combine(:threshold_mean = mean(:threshold), :threshold_error = 1.96*std(:threshold)/sqrt(length(:threshold)))
-    end
-
-    # Plot
-    fig = Figure(; size=(500, 500))
-    ax = Axis(fig[1, 1])
-
-    n = 1
-    for condition in ["Detection", "Discrimination"]
-        for freq in [1, 2]
-            ss = @subset(df_avg, :condition .== condition, :freq .== freq)
-            ss_ind = @subset(df_ind, :condition .== condition, :freq .== freq)
-            col = freq_colors[freq == 1 ? "low" : "high"]
-            scatter!(ax, [n], ss.threshold_mean; color=col, markersize=20.0)
-            scatter!(ax, fill(n + 0.3, nrow(ss_ind)), ss_ind.threshold; color=col)
-            n = n + 1
-        end
-        n = n + 1
-    end
-
-    # Add labels
-    ax.xticks = ([1, 2, 4, 5], ["Detection-Low", "Detection-High", "Discrimination-Low", "Discrimination-High"])
-    ax.xticklabelrotation = pi/4
-    ax.ylabel = "Threshold (20*log10(m))"
-    ax.xlabel = "Condition"
     fig
 end
 
@@ -264,7 +97,8 @@ function plot_fig_pa1()
 
     # Plot level discrimination data
     data_subset = @subset(df_avg, :n_comp .== 1)
-    map(zip(groupby(data_subset, [:freq]), colors)) do (group, color)
+    map(zip(["Low", "High"], colors)) do (freq, color)
+        group = @subset(data_subset, :freq .== freq)
         scatter!(ax, x_ld, group.threshold_mean; color=color, kwargs...)
         errorbars!(ax, x_ld, group.threshold_mean, group.threshold_error; color=color, kwargs...)
     end
@@ -336,7 +170,7 @@ function plot_fig_pa2()
     df[!, :task] = [mapper[x] for x in df.task]
 
     # Filter to only be complete datasets
-    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x14", "x15", "x16", "x17"])))
+    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x14", "x15", "x16", "x17", "x18", "x20", "x25", "x28", "x29"])))
 
     # Add information about which was completed first for each person
     # Here, a 1 indicates control was completed first, a 2 indicates PA was completed first
@@ -348,7 +182,12 @@ function plot_fig_pa2()
         "x14" => 2,
         "x15" => 1,
         "x16" => 1,
-        "x17" => 1
+        "x17" => 1,
+        "x18" => 1,
+        "x20" => 1,
+        "x25" => 2,
+        "x28" => 1,
+        "x29" => 2,
     )
     df[!, :order] .= getindex.(Ref(order), df.subj)
 

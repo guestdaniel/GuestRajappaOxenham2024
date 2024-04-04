@@ -9,6 +9,7 @@ using Chain
 using Statistics
 using Colors
 using DrWatson
+using HypothesisTests
 
 # Set parameters/constants/etc
 freq_colors = Dict("low" => "#7fc97f", "high" => "#beaed4")

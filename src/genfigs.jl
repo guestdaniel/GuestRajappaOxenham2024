@@ -6,9 +6,19 @@ using CairoMakie  # so we can set theme
 # Set theme (no upper/right box, outward ticks)
 set_theme!(theme_thesis())
 
+# Plot schematic stimulus spectra
+for n_comp in [1, 3, 5, 9, 15]
+    for freq in ["Low", "High"]
+        fig = plot_schematic_stimulus(freq, n_comp)
+        save(projectdir("plots", "schematic_stimulus_$(freq)_$(n_comp).png"), fig, px_per_unit=5)
+    end
+end
+
 # Plot Experiment 1a
 fig = plot_fig_pa1()
 save(projectdir("plots", "profile_analysis.png"), fig, px_per_unit=5)
+fig = plot_fig_pa1_learning_v2()
+save(projectdir("plots", "profile_analysis_learning.png"), fig, px_per_unit=5)
 
 # Plot Experiment 1b
 fig = plot_fig_pa2()

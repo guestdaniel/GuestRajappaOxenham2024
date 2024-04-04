@@ -1,4 +1,34 @@
-export plot_fig_thr, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b
+export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl
+
+function plot_schematic_stimulus(freq, n_comp)
+    fig = Figure(; size=(350, 350))
+    ax = Axis(fig[1, 1]; xscale=log10, xminorticksvisible=false, spinewidth=3.5)
+    if n_comp == 1
+        if freq == "Low"
+            freqs = [487.0]
+        else
+            freqs = [9909.0]
+        end
+    else
+        if freq == "Low"
+            freqs = exp.(LinRange(log(300.0), log(792.0), n_comp))
+        else
+            freqs = exp.(LinRange(log(6100.0), log(16100.0), n_comp))
+        end
+    end
+    ΔL = srs_to_ΔL(0.0)
+    color = freq_colors[lowercase(freq)]
+    for (idx, freq) in enumerate(freqs)
+        lines!(ax, [freq, freq], [0.0, 60.0 + (idx == ceil(length(freqs)/2) ? ΔL : 0.0)]; color=color, linewidth=4.0)
+    end
+    xlims!(ax, 300.0 * 2.0^(-0.5), 16100.0*2.0^(0.5))
+    ylims!(ax, 30.0, 75.0)
+    ax.xticks = ([300.0, 487.0, 798.0, 6100.0, 9909.0, 16100.0], ["300 Hz", "487 Hz", "798 Hz", "6.1 kHz", "9.9 kHz", "16.1 kHz"])
+    ax.xticklabelrotation = π/2
+    ax.xticklabelsize = 30.0
+    hideydecorations!(ax)
+    fig
+end
 
 function plot_fig_thr()
     # Load data
@@ -99,8 +129,11 @@ function plot_fig_pa1()
     data_subset = @subset(df_avg, :n_comp .== 1)
     map(zip(["Low", "High"], colors)) do (freq, color)
         group = @subset(data_subset, :freq .== freq)
-        scatter!(ax, x_ld, group.threshold_mean; color=color, kwargs...)
         errorbars!(ax, x_ld, group.threshold_mean, group.threshold_error; color=color, kwargs...)
+        scatter!(ax, x_ld, group.threshold_mean; color=color, kwargs...)
+        if freq == "High"
+            scatter!(ax, x_ld, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+        end
     end
 
     # Plot unroved profile-analysis data
@@ -112,8 +145,11 @@ function plot_fig_pa1()
     map(zip(["Low", "High"], colors)) do (freq, color)
         group = @subset(data_subset, :freq .== freq)
         lines!(ax, x_unroved, group.threshold_mean; color=color, kwargs...)
-        scatter!(ax, x_unroved, group.threshold_mean; color=color, kwargs...)
         errorbars!(ax, x_unroved, group.threshold_mean, group.threshold_error; color=color, kwargs...)
+        scatter!(ax, x_unroved, group.threshold_mean; color=color, kwargs...)
+        if freq == "High"
+            scatter!(ax, x_unroved, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+        end
     end
 
     # Plot roved profile-analysis data
@@ -125,9 +161,19 @@ function plot_fig_pa1()
     map(zip(["Low", "High"], colors)) do (freq, color)
         group = @subset(data_subset, :freq .== freq)
         lines!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
-        scatter!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
         errorbars!(ax, x_roved, group.threshold_mean, group.threshold_error; color=color, kwargs...)
+        scatter!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
+        if freq == "High"
+            scatter!(ax, x_roved, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+        end
     end
+
+    # Add manual labels
+    scatter!(ax, [1.0], [8.0]; color=freq_colors["low"], kwargs...)
+    text!(ax, [1.3], [8.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
+    scatter!(ax, [1.0], [10.0]; color=freq_colors["high"], kwargs...)
+    scatter!(ax, [1.0], [10.0]; color=:white, kwargs..., markersize=6.0)
+    text!(ax, [1.3], [10.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
 
     # Handle x-axis
     ax.xticks = (
@@ -159,6 +205,178 @@ function plot_fig_pa1()
     ylims!(ax, (-15, 17.5))
 
     # Render
+    fig
+end
+
+function plot_fig_pa1_learning_v2()
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis.csv")))
+    df = @orderby(df, :n_comp)
+    mapper = Dict("Control" => "Level discrimination", "Task" => "Profile analysis")
+    df[!, :task] = [mapper[x] for x in df.task]
+
+    # Create list of conditions to loop through
+    conds = Iterators.product([1, 3, 5, 9, 15], ["Level discrimination", "Profile analysis"])
+
+    # Map over conditions to create new dataframe that contains information about run (assuming that the order of rows inidcates the order of runs, persuant with AFC style)
+    temp = map(conds) do (n_comp, task)
+        # If we're in the 1-component profile analysis condition, continue
+        if (n_comp == 1) & (task == "Profile analysis")
+            return DataFrame()
+        else
+            # Subset data to n_comp and task condition
+            ss = @subset(df, :task .== task, :n_comp .== n_comp)
+
+            # Select unique subjects
+            subjs = unique(df.subj)
+
+            # Loop through each subject and add run info
+            subj_results = map(subjs) do subj
+                lo = @subset(ss, :subj .== subj, :freq .== "Low")
+                lo[!, :run] .= 1:nrow(lo)
+                hi = @subset(ss, :subj .== subj, :freq .== "High")
+                hi[!, :run] .= 1:nrow(hi)
+                return vcat(lo, hi)
+            end
+            return subj_results
+        end
+    end
+    df = vcat(vcat(temp...)...)
+
+    # Create plot
+    fig = Figure(; size=(850, 1000))
+    axs = [(i == 1) & (j == 2) ? nothing : Axis(fig[i, j]; xminorticksvisible=false) for i in 1:5, j in 1:2]
+
+    # Map through conditions and plot
+    for ((n_comp, task), ax) in zip(conds, axs)
+        # If we're in the 1-component profile analysis condition, continue
+        if (n_comp == 1) & (task == "Profile analysis")
+            continue 
+        end
+
+        # Subset data to n_comp and task condition
+        ss = @subset(df, :task .== task, :n_comp .== n_comp)
+
+        # Select unique subjects
+        subjs = unique(df.subj)
+
+        # Loop over frequencies
+        for freq in ["Low", "High"]
+            # Loop over first and last run
+            thrs = map(1:12) do run
+                # Compute and plot average thresholds across subjs
+                temp = @subset(ss, :freq .== freq, :run .== run)
+                avg = mean(temp.threshold)
+                err = 1.96*std(temp.threshold)/sqrt(length(temp.threshold))
+                errorbars!(ax, [run], [avg], [err]; color=freq_colors[lowercase(freq)], whiskerwidth=10.0, linewidth=3.0)
+                scatter!(ax, [run], [avg]; color=freq_colors[lowercase(freq)], markersize=15.0)
+                if freq == "High"
+                    scatter!(ax, [run], [avg]; color=:white, markersize=6.0)
+                end
+                return temp
+            end
+
+            # Loop through subjects available with last run and compute difference scores
+            δ = map(thrs[12].subj) do subj
+                thr12 = @subset(thrs[12], :subj .== subj).threshold[1]
+                thr1 = @subset(thrs[1], :subj .== subj).threshold[1]
+                return thr12 - thr1
+            end
+
+            # Compute p-value and average learning rate 
+            pval = pvalue(OneSampleTTest(δ))
+            δ_bar = mean(δ)
+            μ12 = mean(thrs[12].threshold)
+
+            # Print
+            text!(ax, 12.5, μ12; text="Δ = $(round(δ_bar; digits=2)) dB $(pval < 0.05 ? "✲" : " ")", color=freq_colors[lowercase(freq)], align=(:left, :center))
+        end
+
+        # Set limits
+        ylims!(ax, (-20.0, 16.0))
+        ax.xticks = 1:12
+        xlims!(ax, (-1, 18))
+        hidexdecorations!(ax; ticklabels=(n_comp==15 ? false : true), ticks=false)
+        hideydecorations!(ax; ticklabels=(task == "Level discrimination" ? false : true), ticks=false)
+
+        # Add legend
+        if (task == "Level discrimination") & (n_comp == 1)
+            scatter!(ax, [1.0], [8.0]; color=freq_colors["low"], markersize=15.0)
+            text!(ax, [1.5], [8.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
+            scatter!(ax, [1.0], [12.0]; color=freq_colors["high"], markersize=15.0)
+            scatter!(ax, [1.0], [12.0]; color=:white, markersize=6.0)
+            text!(ax, [1.5], [12.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
+        end
+    end
+
+    # Add labels
+    Label(fig[6, :], "Run"; fontsize=20.0)
+    Label(fig[:, 0], "Threshold (dB SRS)"; rotation=π/2, fontsize=20.0)
+    Label(fig[0, 1], "Unroved"; fontsize=20.0, tellwidth=false)
+    Label(fig[0, 2], "Roved"; fontsize=20.0, tellwidth=false)
+    for (idx, n_comp) in enumerate(unique(df.n_comp))
+        Label(fig[idx, 3], "$n_comp comps"; tellheight=false, fontsize=20.0)
+    end
+    rowgap!(fig.layout, 6, Relative(0.01))
+    colgap!(fig.layout, 1, Relative(0.01))
+  
+    # Render
+    fig
+end
+
+function plot_fig_pa2_sl()
+    # Load threshold data from disk
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.1_screen_audibility_extra_2024_clean_data.csv")))
+
+    # Subset to only passed + complete datasets
+    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x11", "x14", "x15", "x16", "x17", "x18", "x20", "x25", "x28", "x29"])))
+
+    # Convert threshold to float
+    df.threshold .= parse.(Float64, df.threshold)
+
+    # Rename ear to left and right
+    mapper = Dict(1 => "Left", 2 => "Right")
+    df.ear .= getindex.(Ref(mapper), df.ear)
+
+    # Map through subjects and take only last two runs
+    dfs = map(unique(df.subj)) do subj
+        ss = @subset(df, :subj .== subj)
+        return ss[(end-3):end, :]
+    end
+    df = vcat(dfs...)
+
+    # Condense to means and SEs by ear and subj
+    df_avg = @chain df begin
+        groupby([:ear, :subj])
+        @combine(:threshold_mean = mean(:threshold))
+    end
+
+    # Unstack by ear
+    df_avg = unstack(df_avg, :ear, :threshold_mean) 
+
+    # Add passed and selected ear column
+    df_avg[!, :selected_ear] .= "None"
+    df_avg[!, :passed] .= false
+    df_avg[!, :better_threshold] .= 0.0
+    for idx_row in 1:nrow(df_avg)
+        df_avg[idx_row, :selected_ear] = df_avg[idx_row, :Left] < df_avg[idx_row, :Right] ? "Left" : "Right"
+        df_avg[idx_row, :better_threshold] = df_avg[idx_row, Symbol(df_avg[idx_row, :selected_ear])]
+    end
+    df_avg.passed .= df_avg.better_threshold .< 40.0
+
+    # Add exception for x01 (x01 was tested on a slightly older protocol and their threshold in left ear is unreliable)
+    df_avg[df_avg.subj .== "x01", :selected_ear] .= "Right"
+    df_avg[df_avg.subj .== "x01", :better_threshold] .= df_avg[df_avg.subj .== "x01", :Right]
+
+    # Create narrow little plot to go alongside plot_fig_pa2
+    fig = Figure(; size=(150, 400))
+    ax = Axis(fig[1, 1]; bottomspinevisible=false)
+    scatter!(ax, fill(1.0, nrow(df_avg)), df_avg.better_threshold; color=freq_colors["high"])
+    scatter!(ax, [1.25], [mean(df_avg.better_threshold)]; color=freq_colors["high"], markersize=15.0)
+    errorbars!(ax, [1.25], [mean(df_avg.better_threshold)], [1.96*std(df_avg.better_threshold)/sqrt(length(df_avg.better_threshold))]; color=freq_colors["high"], whiskerwidth=15.0, linewidth=3.0)
+    xlims!(ax, (0.5, 1.5))
+    hidexdecorations!(ax)
+    ax.ylabel = "Absolute threshold at 16 kHz (dB SPL)"
     fig
 end
 
@@ -227,10 +445,20 @@ function plot_fig_pa2()
         df_subset = @subset(df_avg, :freq .== freq)
         map(seq) do (task, order, offset)
             datum = @subset(df_subset, :order .== order, :task .== task)
-            scatter!(ax, [offset], datum.threshold_mean; color=color, kwargs...)
             errorbars!(ax, [offset], datum.threshold_mean, datum.threshold_error; color=color, kwargs...)
+            scatter!(ax, [offset], datum.threshold_mean; color=color, kwargs...)
+            if freq == "High"
+                scatter!(ax, [offset], datum.threshold_mean; color=:white, kwargs..., markersize=6.0)
+            end
         end
     end
+
+    # Add manual labels
+    scatter!(ax, [0.5], [-10.0]; color=freq_colors["low"], kwargs...)
+    text!(ax, [0.8], [-10.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
+    scatter!(ax, [0.5], [-8.0]; color=freq_colors["high"], kwargs...)
+    scatter!(ax, [0.5], [-8.0]; color=:white, kwargs..., markersize=6.0)
+    text!(ax, [0.8], [-8.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
 
     # Handle x-axis
     ax.xticks = (
@@ -298,7 +526,7 @@ function plot_fig_r1a()
         repeat([1.15], 12), 
         @subset(df_ind, :freq .== "High", :task .== "Control").threshold_mean; 
         width=0.25, 
-        color=freq_colors["high"]
+        color=freq_colors["high"],
     )
     boxplot!(
         ax, 

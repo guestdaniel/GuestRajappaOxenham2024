@@ -21,5 +21,6 @@ set_theme!(theme_thesis())
 include("stimuli.jl")
 include("control_models.jl")  # control observer models 
 include("plotting.jl")        # plotting code
+include("numbers.jl")
 
 end # module GuestRajappaOxenham2024

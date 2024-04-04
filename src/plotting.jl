@@ -79,6 +79,13 @@ function plot_fig_pa1()
     mapper = Dict("Control" => "Level discrimination", "Task" => "Profile analysis")
     df[!, :task] = [mapper[x] for x in df.task]
 
+    # Preproccess to calculate condition-wise means at ind level
+    df_ind = @chain df begin
+        groupby([:freq, :task, :n_comp, :subj])
+        @combine(:threshold = mean(:threshold))
+        @orderby(reverse(:freq))
+    end
+
     # Preproccess to calculate condition-wise means
     df_avg = @chain df begin
         groupby([:freq, :task, :n_comp, :subj])
@@ -93,15 +100,17 @@ function plot_fig_pa1()
     ax = Axis(fig[1, 1])
     colors = [freq_colors["low"], freq_colors["high"]]
     kwargs = [
-        :markersize => 14.0,
-        :linewidth => 2.0,
+        :markersize => 18.0,
+        :linewidth => 3.0,
         :whiskerwidth => 12.0,
     ]
 
     # Assign locations
-    x_ld = [1.0]
+    x_ld = [1]
     x_unroved = [3, 4, 5, 6]
     x_roved = [8, 9, 10, 11]
+    offset = 0.3
+    scale = 0.03
 
     # Plot guidelines
     hlines!(ax, [13.0]; color=:red)  # one gray line at 13 dB SRS to indicate ceiling max
@@ -110,8 +119,8 @@ function plot_fig_pa1()
     temp = calc_θ_overall_level_unroved(df)
     θ_control_low = [x[1] for x in temp]
     θ_control_high = [x[2] for x in temp]
-    lines!(ax, x_unroved, θ_control_low; color=freq_colors["low"], linestyle=:dash)
-    lines!(ax, x_unroved, θ_control_high; color=freq_colors["high"], linestyle=:dash)
+    lines!(ax, x_unroved, θ_control_low; color=freq_colors["low"], linestyle=:dash, kwargs...)
+    lines!(ax, x_unroved, θ_control_high; color=freq_colors["high"], linestyle=:dash, kwargs...)
 
     # Plot roved control model
     fn_cache = projectdir("cache", "roved_control.jld2")
@@ -121,52 +130,72 @@ function plot_fig_pa1()
         temp = calc_θ_overall_level_roved()
         save(fn_cache, Dict("data" => temp))
     end
-    lines!(ax, x_roved, temp; color=:lightgray, linestyle=:dash)
+    lines!(ax, x_roved, temp; color=:lightgray, linestyle=:dash, kwargs...)
     temp = calc_θ_ΔL_roved()
-    lines!(ax, [x_roved[1], x_roved[end]], [temp, temp]; color=:lightgray, linestyle=:dot)
+    lines!(ax, [x_roved[1], x_roved[end]], [temp, temp]; color=:lightgray, linestyle=:dot, kwargs...)
 
     # Plot level discrimination data
-    data_subset = @subset(df_avg, :n_comp .== 1)
+    ss = @subset(df_avg, :n_comp .== 1)
+    ss_ind = @subset(df_ind, :n_comp .== 1)
     map(zip(["Low", "High"], colors)) do (freq, color)
-        group = @subset(data_subset, :freq .== freq)
+        group = @subset(ss, :freq .== freq)
+        group_ind = @subset(ss_ind, :freq .== freq)
         errorbars!(ax, x_ld, group.threshold_mean, group.threshold_error; color=color, kwargs...)
         scatter!(ax, x_ld, group.threshold_mean; color=color, kwargs...)
+        jitter = scale .* randn(nrow(group_ind))
+        scatter!(ax, fill(x_ld[1], nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=color, kwargs..., markersize=10.0)
         if freq == "High"
             scatter!(ax, x_ld, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+            scatter!(ax, fill(x_ld[1], nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=:white, kwargs..., markersize=3.0)
         end
     end
 
     # Plot unroved profile-analysis data
-    data_subset = @chain df_avg begin
-        @subset(:n_comp .> 1)
-        @subset(:task .== "Level discrimination")
-        @orderby(:n_comp)
-    end
-    map(zip(["Low", "High"], colors)) do (freq, color)
-        group = @subset(data_subset, :freq .== freq)
-        lines!(ax, x_unroved, group.threshold_mean; color=color, kwargs...)
-        errorbars!(ax, x_unroved, group.threshold_mean, group.threshold_error; color=color, kwargs...)
-        scatter!(ax, x_unroved, group.threshold_mean; color=color, kwargs...)
-        if freq == "High"
-            scatter!(ax, x_unroved, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+    map(zip(["Level discrimination", "Profile analysis"], [x_unroved, x_roved])) do (task, x)
+        ss = @chain df_avg begin
+            @subset(:n_comp .> 1)
+            @subset(:task .== task)
+            @orderby(:n_comp)
+        end
+        ss_ind = @chain df_ind begin
+            @subset(:n_comp .> 1)
+            @subset(:task .== task)
+            @orderby(:n_comp)
+        end
+        map(zip(["Low", "High"], colors)) do (freq, color)
+            group = @subset(ss, :freq .== freq)
+            errorbars!(ax, x, group.threshold_mean, group.threshold_error; color=color, kwargs...)
+            scatter!(ax, x, group.threshold_mean; color=color, kwargs...)
+            if freq == "High"
+                scatter!(ax, x, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+            end
+
+            map(zip([3, 5, 9, 15], x)) do (n_comp, this_x)
+                group_ind = @subset(ss_ind, :freq .== freq, :n_comp .== n_comp)
+                jitter = scale .* randn(nrow(group_ind))
+                scatter!(ax, fill(this_x, nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=color, kwargs..., markersize=10.0)
+                if freq == "High"
+                    scatter!(ax, fill(this_x, nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=:white, kwargs..., markersize=3.0)
+                end
+            end
         end
     end
 
-    # Plot roved profile-analysis data
-    data_subset = @chain df_avg begin
-        @subset(:n_comp .> 1)
-        @subset(:task .!= "Level discrimination")
-        @orderby(:n_comp)
-    end
-    map(zip(["Low", "High"], colors)) do (freq, color)
-        group = @subset(data_subset, :freq .== freq)
-        lines!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
-        errorbars!(ax, x_roved, group.threshold_mean, group.threshold_error; color=color, kwargs...)
-        scatter!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
-        if freq == "High"
-            scatter!(ax, x_roved, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
-        end
-    end
+#     # Plot roved profile-analysis data
+#     data_subset = @chain df_avg begin
+#         @subset(:n_comp .> 1)
+#         @subset(:task .!= "Level discrimination")
+#         @orderby(:n_comp)
+#     end
+#     map(zip(["Low", "High"], colors)) do (freq, color)
+#         group = @subset(data_subset, :freq .== freq)
+# #        lines!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
+#         errorbars!(ax, x_roved, group.threshold_mean, group.threshold_error; color=color, kwargs...)
+#         scatter!(ax, x_roved, group.threshold_mean; color=color, kwargs...)
+#         if freq == "High"
+#             scatter!(ax, x_roved, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+#         end
+#     end
 
     # Add manual labels
     scatter!(ax, [1.0], [8.0]; color=freq_colors["low"], kwargs...)

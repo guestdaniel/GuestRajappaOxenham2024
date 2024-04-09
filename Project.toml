@@ -4,6 +4,8 @@ authors = ["Daniel Guest <guestusut@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+AuditoryNerveFiber = "83795400-82fe-439b-8fdc-4e65948642a8"
+AuditorySignalUtils = "20759599-9703-4078-b9af-37a489742e5c"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"

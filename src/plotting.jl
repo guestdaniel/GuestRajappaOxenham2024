@@ -1,4 +1,4 @@
-export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl
+export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl, plot_schematic_an_response
 
 function plot_schematic_stimulus(freq, n_comp)
     fig = Figure(; size=(350, 350))
@@ -23,6 +23,49 @@ function plot_schematic_stimulus(freq, n_comp)
     end
     xlims!(ax, 300.0 * 2.0^(-0.5), 16100.0*2.0^(0.5))
     ylims!(ax, 30.0, 75.0)
+    ax.xticks = ([300.0, 487.0, 798.0, 6100.0, 9909.0, 16100.0], ["300 Hz", "487 Hz", "798 Hz", "6.1 kHz", "9.9 kHz", "16.1 kHz"])
+    ax.xticklabelrotation = π/2
+    ax.xticklabelsize = 30.0
+    hideydecorations!(ax)
+    fig
+end
+
+function plot_schematic_an_response(freq, n_comp; n_cf=301, fig=Figure(; size=(350, 350)), ax=Axis(fig[1, 1]; xscale=log10, xminorticksvisible=false, spinewidth=3.5))
+    # Set up figure
+    
+    # Select parameters
+    if n_comp == 1
+        if freq == "Low"
+            freqs = [487.0]
+        else
+            freqs = [9909.0]
+        end
+    else
+        if freq == "Low"
+            freqs = exp.(LinRange(log(300.0), log(792.0), n_comp))
+        else
+            freqs = exp.(LinRange(log(6100.0), log(16100.0), n_comp))
+        end
+    end
+
+    # Choose CF values 
+    cfs = LogRange(487.0 * 2.0^(-1.0), 9909.0 * 2.0 ^ (1.0), n_cf)
+
+    # Synthesize reference stimulus (-Inf dB SRS) and stimulus at 0 dB SRS
+    ref, tar = map([srs_to_ΔL(-Inf), srs_to_ΔL(0.0)]) do inc
+        stim = profile_analysis_tone(freqs, length(freqs) == 1 ? 1 : Int(round(length(freqs)/2) + 1); dur=0.35, pedestal_level=60.0, increment=inc)
+        map(cfs) do cf
+            ihc = sim_ihc_zbc2014(stim, cf; species="human")
+            an = sim_anrate_zbc2014(ihc, cf; power_law="approximate", fractional=false, fiber_type="low")
+            mean(an)
+        end
+    end
+
+    color = freq_colors[lowercase(freq)]
+    lines!(ax, cfs, ref; linestyle=:dash, color=color, linewidth=3.0)
+    lines!(ax, cfs, tar; linestyle=:solid, color=color, linewidth=3.0)
+    xlims!(ax, 300.0 * 2.0^(-0.5), 16100.0*2.0^(0.5))
+    ylims!(ax, 0.0, 125.0)
     ax.xticks = ([300.0, 487.0, 798.0, 6100.0, 9909.0, 16100.0], ["300 Hz", "487 Hz", "798 Hz", "6.1 kHz", "9.9 kHz", "16.1 kHz"])
     ax.xticklabelrotation = π/2
     ax.xticklabelsize = 30.0

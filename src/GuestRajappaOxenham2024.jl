@@ -1,5 +1,6 @@
 module GuestRajappaOxenham2024
 
+# Standard packages
 using DataFrames
 using DataFramesMeta
 using Distributions
@@ -12,11 +13,15 @@ using DrWatson
 using HypothesisTests
 using GLM
 
+# Custom packages
+using AuditoryNerveFiber
+using AuditorySignalUtils
+
+# Exports
 export subjs_2024
 
 # Set parameters/constants/etc
 freq_colors = Dict("low" => "#7fc97f", "high" => "#beaed4")
-#set_theme!(theme_thesis())
 
 # Load code
 include("theme.jl")

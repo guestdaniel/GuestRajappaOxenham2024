@@ -11,6 +11,9 @@ for n_comp in [1, 3, 5, 9, 15]
     for freq in ["Low", "High"]
         fig = plot_schematic_stimulus(freq, n_comp)
         save(projectdir("plots", "schematic_stimulus_$(freq)_$(n_comp).png"), fig, px_per_unit=5)
+
+        fig = plot_schematic_an_response(freq, n_comp)
+        save(projectdir("plots", "schematic_response_$(freq)_$(n_comp).png"), fig, px_per_unit=5)
     end
 end
 

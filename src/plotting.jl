@@ -39,6 +39,7 @@ function plot_fig_thr()
 
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.2_measure_thresholds_extra_2024_clean_data.csv")))
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
 
     # Analyze into means
     df_ind = @chain df begin
@@ -136,7 +137,7 @@ function plot_fig_pa1()
     lines!(ax, x_unroved, θ_control_high; color=freq_colors["high"], linestyle=:dash, kwargs...)
 
     # Plot roved control model
-    fn_cache = projectdir("cache", "roved_control.jld2")
+    fn_cache = projectdir("cache", "roved__control.jld2")
     if isfile(fn_cache)
         temp = load(fn_cache)["data"]
     else
@@ -371,7 +372,7 @@ function plot_fig_pa2_sl()
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.1_screen_audibility_extra_2024_clean_data.csv")))
 
     # Subset to only passed + complete datasets
-    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x11", "x14", "x15", "x16", "x17", "x18", "x20", "x25", "x28", "x29"])))
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
 
     # Convert threshold to float
     df.threshold .= parse.(Float64, df.threshold)
@@ -406,52 +407,126 @@ function plot_fig_pa2_sl()
     end
     df_avg.passed .= df_avg.better_threshold .< 40.0
 
-    # Add exception for x01 (x01 was tested on a slightly older protocol and their threshold in left ear is unreliable)
-    df_avg[df_avg.subj .== "x01", :selected_ear] .= "Right"
-    df_avg[df_avg.subj .== "x01", :better_threshold] .= df_avg[df_avg.subj .== "x01", :Right]
+    # Rename df_avg to df_abs_threshold
+    df_abs_thr = df_avg
 
     # Create narrow little plot to go alongside plot_fig_pa2
-    fig = Figure(; size=(150, 400))
-    ax = Axis(fig[1, 1]; bottomspinevisible=false)
-    scatter!(ax, fill(1.0, nrow(df_avg)), df_avg.better_threshold; color=freq_colors["high"])
-    scatter!(ax, [1.25], [mean(df_avg.better_threshold)]; color=freq_colors["high"], markersize=15.0)
-    errorbars!(ax, [1.25], [mean(df_avg.better_threshold)], [1.96*std(df_avg.better_threshold)/sqrt(length(df_avg.better_threshold))]; color=freq_colors["high"], whiskerwidth=15.0, linewidth=3.0)
-    xlims!(ax, (0.5, 1.5))
-    hidexdecorations!(ax)
-    ax.ylabel = "Absolute threshold at 16 kHz (dB SPL)"
+    # fig = Figure(; size=(150, 400))
+    # ax = Axis(fig[1, 1]; bottomspinevisible=false)
+    # scatter!(ax, fill(1.0, nrow(df_avg)), df_avg.better_threshold; color=freq_colors["high"])
+    # scatter!(ax, [1.25], [mean(df_avg.better_threshold)]; color=freq_colors["high"], markersize=15.0)
+    # errorbars!(ax, [1.25], [mean(df_avg.better_threshold)], [1.96*std(df_avg.better_threshold)/sqrt(length(df_avg.better_threshold))]; color=freq_colors["high"], whiskerwidth=15.0, linewidth=3.0)
+    # xlims!(ax, (0.5, 1.5))
+    # hidexdecorations!(ax)
+    # ax.ylabel = "Absolute threshold at 16 kHz (dB SPL)"
+    set_theme!(theme_thesis(), fontsize=20.0)
+
+    # Load profile-analysis behavior data 
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_with_order.csv")))
+
+    # Preproccess to calculate condition-wise means
+    df_ind = @chain df begin
+        groupby([:freq, :task, :n_comp, :order, :subj])
+        @combine(:threshold = mean(:threshold))
+    end
+
+    # Rename df_ind to df_pa
+    df_pa = df_ind
+
+    # Load data
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.2_measure_thresholds_extra_2024_clean_data.csv")))
+
+    # Analyze into means
+    df_ind = @chain df begin
+        @orderby(:freq)
+        @transform(:freq_group = :freq .< 6100)
+        groupby([:freq, :freq_group, :subj])
+        @combine(:threshold = mean(:threshold))
+    end
+
+    # Rename df_ind to df_msk_thr
+    df_msk_thr = df_ind
+
+    # At this point, we have :
+    # - df_pa (profile analysis 2024 data)
+    # - df_abs_thr (absolute threshold data for 16 kHz)
+    # - df_msk_thr (masked threshold data for 16 kHz)
+   
+    # Now we want to create a master dataframe that contains all the info
+    subjs = intersect(unique(df_pa.subj), unique(df_abs_thr.subj), unique(df_msk_thr.subj))
+
+    # Map over subjects and create data DataFrame
+    dfs = map(subjs) do subj
+        # Calculate relevant PA threshold
+        ss = @subset(df_pa, :freq .== "High", :subj .== subj)
+        thr_pa = mean(ss.threshold)
+
+        # Extract abs and masked thresholds
+        thr_abs = @subset(df_abs_thr, :subj .== subj).better_threshold[1]
+        thr_msk = @subset(df_msk_thr, :subj .== subj, :freq .== 16100).threshold[1]
+
+        # Construct dataframe
+        DataFrame(
+            subj=subj,
+            thr_pa=thr_pa,
+            thr_abs=thr_abs,
+            thr_msk=thr_msk,
+        )
+    end
+    df = vcat(dfs...)
+
+    # Now plot!
+    fig = Figure(; size=(340, 550))
+    kwargs = [
+        :markersize => 18.0,
+        :linewidth => 3.0,
+        :whiskerwidth => 12.0,
+    ]
+
+    # PLOT ABS THR
+    ax = Axis(fig[1, 1])
+    scatter!(ax, df.thr_abs, df.thr_pa; color=freq_colors["high"], kwargs...)
+    ax.xlabel = "Absolute threshold (dB SPL)"
+    ax.ylabel = "Profile-analysis\nthreshold (dB SRS)"
+
+    # Add trend lines 
+    model = lm(@formula(thr_pa ~ thr_abs), df)
+    ablines!(ax, coef(model)[1], coef(model)[2]; color=freq_colors["high"])
+
+    pval = pvalue(CorrelationTest(df.thr_pa, df.thr_abs))
+
+    ylims!(ax, 0.0, 15.0)
+    xlims!(ax, 10.0, 60.0)
+    text!(ax, [40.0], [4.5]; text="R2 = $(round(r2(model); digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
+    text!(ax, [40.0], [3.0]; text="p = $(round(pval; digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
+
+    # PLOT MSK THR
+    ax = Axis(fig[2, 1])
+    scatter!(ax, df.thr_msk, df.thr_pa; color=freq_colors["high"], kwargs...)
+    ax.xlabel = "Masked threshold (dB SPL)"
+    ax.ylabel = "Profile-analysis\nthreshold (dB SRS)"
+
+    # Add trend lines 
+    model = lm(@formula(thr_pa ~ thr_msk), df)
+    ablines!(ax, coef(model)[1], coef(model)[2]; color=freq_colors["high"])
+
+    pval = pvalue(CorrelationTest(df.thr_pa, df.thr_msk))
+
+    ylims!(ax, 0.0, 15.0)
+    xlims!(ax, 10.0, 60.0)
+    text!(ax, [40.0], [4.5]; text="R2 = $(round(r2(model); digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
+    text!(ax, [40.0], [3.0]; text="p = $(round(pval; digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
+    set_theme!(theme_thesis())
+
     fig
 end
 
 function plot_fig_pa2()
     # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
-    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024.csv")))
-    df = @orderby(df, :n_comp)
-    mapper = Dict("Control" => "Level discrimination", "Task" => "Profile analysis")
-    df[!, :task] = [mapper[x] for x in df.task]
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_with_order.csv")))
 
-    # Filter to only be complete datasets
-    df = @subset(df, in.(:subj, Ref(["x01", "x02", "x07", "x09", "x14", "x15", "x16", "x17", "x18", "x20", "x25", "x28", "x29"])))
-
-    # Add information about which was completed first for each person
-    # Here, a 1 indicates control was completed first, a 2 indicates PA was completed first
-    order = Dict(
-        "x01" => 2,
-        "x02" => 1,
-        "x07" => 2,
-        "x09" => 2,
-        "x14" => 2,
-        "x15" => 1,
-        "x16" => 1,
-        "x17" => 1,
-        "x18" => 1,
-        "x20" => 1,
-        "x25" => 2,
-        "x28" => 1,
-        "x29" => 2,
-    )
-    df[!, :order] .= getindex.(Ref(order), df.subj)
-
-    # Preproccess to calculate condition-wise means
+   # Preproccess to calculate condition-wise means
     df_ind = @chain df begin
         groupby([:freq, :task, :n_comp, :order, :subj])
         @combine(:threshold = mean(:threshold))
@@ -484,10 +559,10 @@ function plot_fig_pa2()
 
     # Pick order to plot points and positions along x axis
     seq = [
-        ("Level discrimination", 1, 1.0),
-        ("Profile analysis", 1, 2.0),
-        ("Level discrimination", 2, 4.0),
-        ("Profile analysis", 2, 5.0),
+        ("Control", 1, 1.0),
+        ("Task", 1, 2.0),
+        ("Control", 2, 4.0),
+        ("Task", 2, 5.0),
     ]
 
     # Plot unroved profile-analysis data
@@ -671,6 +746,7 @@ function plot_fig_r2a()
 
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "ripple_discrimination_extra_2024.csv")));
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
 
     # Compute individual and group means
     df_ind = @chain df begin
@@ -721,6 +797,7 @@ function plot_fig_r2b()
 
     # Load data
     df = DataFrame(CSV.File("data/exp_pro/ripple_discrimination_extra_2024.csv"));
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
 
     # Compute individual and group means
     df_ind = @chain df begin

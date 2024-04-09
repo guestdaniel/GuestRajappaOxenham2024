@@ -52,3 +52,5 @@ data$freq = factor(data$freq, levels=c(1, 2), labels=c('Low', 'High'))          
 data$task = factor(data$task)                                                         # factorize task
 data = data[substr(data$subj, 1, 1) == "x", ]
 write.csv(data, file.path("data", "exp_pro", "ripple_discrimination_extra_2024.csv"))
+
+# NOTE!!!! DON'T FORGET TO ADD ORDER INFO VIA ADD_ORDER_INFO.JL

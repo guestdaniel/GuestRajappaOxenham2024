@@ -22,12 +22,16 @@ fig = plot_fig_pa1()
 save(projectdir("plots", "profile_analysis.png"), fig, px_per_unit=5)
 fig = plot_fig_pa1_learning_v2()
 save(projectdir("plots", "profile_analysis_learning.png"), fig, px_per_unit=5)
+fig = plot_fig_pa1_learning_v3()
+save(projectdir("plots", "profile_analysis_training.png"), fig, px_per_unit=5)
 
 # Plot Experiment 1b
 fig = plot_fig_pa2()
 save(projectdir("plots", "profile_analysis_extra_2024.png"), fig, px_per_unit=5)
 fig = plot_fig_pa2_sl()
 save(projectdir("plots", "profile_analysis_extra_2024_sl.png"), fig, px_per_unit=5)
+fig = plot_fig_pa2_learning_v3()
+save(projectdir("plots", "profile_analysis_extra_2024_training.png"), fig, px_per_unit=5)
 
 # Plot Experiment 2a
 fig = plot_fig_r1a()

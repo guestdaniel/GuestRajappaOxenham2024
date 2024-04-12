@@ -11,7 +11,7 @@ source(file.path("src", "utils.R"))
 dir_out = file.path("data", "stats")
 
 # Import data
-data = read.csv(file.path("data", "exp_pro", "profile_analysis_extra_2024_with_order.csv"))
+data = read.csv(file.path("data", "exp_pro", "profile_analysis_extra_2024_restricted.csv"))
 data = data[!is.nan(data$threshold), ]
 data$n_comp = factor(data$n_comp)
 data$order = factor(data$order)

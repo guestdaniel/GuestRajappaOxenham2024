@@ -1,4 +1,4 @@
-export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl, plot_schematic_an_response
+export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl, plot_schematic_an_response, plot_fig_pa1_learning_v3, plot_fig_pa2_learning_v3, plot_fig_r1_learning_v3
 
 function plot_schematic_stimulus(freq, n_comp)
     fig = Figure(; size=(350, 350))
@@ -31,8 +31,6 @@ function plot_schematic_stimulus(freq, n_comp)
 end
 
 function plot_schematic_an_response(freq, n_comp; n_cf=301, fig=Figure(; size=(350, 350)), ax=Axis(fig[1, 1]; xscale=log10, xminorticksvisible=false, spinewidth=3.5))
-    # Set up figure
-    
     # Select parameters
     if n_comp == 1
         if freq == "Low"
@@ -53,7 +51,7 @@ function plot_schematic_an_response(freq, n_comp; n_cf=301, fig=Figure(; size=(3
 
     # Synthesize reference stimulus (-Inf dB SRS) and stimulus at 0 dB SRS
     ref, tar = map([srs_to_ΔL(-Inf), srs_to_ΔL(0.0)]) do inc
-        stim = profile_analysis_tone(freqs, length(freqs) == 1 ? 1 : Int(round(length(freqs)/2) + 1); dur=0.35, pedestal_level=60.0, increment=inc)
+        stim = profile_analysis_tone(freqs, length(freqs) == 1 ? 1 : Int(floor(length(freqs)/2) + 1); dur=0.35, pedestal_level=60.0, increment=inc)
         map(cfs) do cf
             ihc = sim_ihc_zbc2014(stim, cf; species="human")
             an = sim_anrate_zbc2014(ihc, cf; power_law="approximate", fractional=false, fiber_type="low")
@@ -62,7 +60,7 @@ function plot_schematic_an_response(freq, n_comp; n_cf=301, fig=Figure(; size=(3
     end
 
     color = freq_colors[lowercase(freq)]
-    lines!(ax, cfs, ref; linestyle=:dash, color=color, linewidth=3.0)
+    lines!(ax, cfs, ref; linestyle=:solid, color=color, linewidth=1.0)
     lines!(ax, cfs, tar; linestyle=:solid, color=color, linewidth=3.0)
     xlims!(ax, 300.0 * 2.0^(-0.5), 16100.0*2.0^(0.5))
     ylims!(ax, 0.0, 125.0)
@@ -83,6 +81,8 @@ function plot_fig_thr()
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.2_measure_thresholds_extra_2024_clean_data.csv")))
     df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = df[df.threshold .!= "NA", :]
+    df.threshold = parse.(Float64, df.threshold)
 
     # Analyze into means
     df_ind = @chain df begin
@@ -131,7 +131,7 @@ end
 
 function plot_fig_pa1()
     # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
-    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis.csv")))
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_restricted.csv")))
     df = @orderby(df, :n_comp)
     mapper = Dict("Control" => "Level discrimination", "Task" => "Profile analysis")
     df[!, :task] = [mapper[x] for x in df.task]
@@ -281,14 +281,14 @@ function plot_fig_pa1()
 
     # Handle y-axis
     ax.ylabel = "Threshold (dB SRS)"
-    ax.yticks = -15:5:15
+    ax.yticks = -20:5:15
 
     # Add labels
     text!(ax, "Unroved"; position=(4.5, 15.0), align=(:center, :baseline))
     text!(ax, "Roved"; position=(9.5, 15.0), align=(:center, :baseline))
 
     # Set limits
-    ylims!(ax, (-15, 17.5))
+    ylims!(ax, (-20, 17.5))
 
     # Render
     fig
@@ -410,6 +410,221 @@ function plot_fig_pa1_learning_v2()
     fig
 end
 
+function plot_fig_pa1_learning_v3()
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis.csv")))
+    df = @orderby(df, :n_comp)
+    mapper = Dict("Control" => "Level discrimination", "Task" => "Profile analysis")
+    df[!, :task] = [mapper[x] for x in df.task]
+
+    # Create list of conditions to loop through
+    conds = Iterators.product([3, 5, 9, 15], ["Level discrimination", "Profile analysis"])
+
+    # Map over conditions to create new dataframe that contains information about run (assuming that the order of rows inidcates the order of runs, persuant with AFC style)
+    temp = map(conds) do (n_comp, task)
+        # If we're in the 1-component profile analysis condition, continue
+        if (n_comp == 1) & (task == "Profile analysis")
+            return DataFrame()
+        else
+            # Subset data to n_comp and task condition
+            ss = @subset(df, :task .== task, :n_comp .== n_comp)
+
+            # Select unique subjects
+            subjs = unique(df.subj)
+
+            # Loop through each subject and add run info
+            subj_results = map(subjs) do subj
+                lo = @subset(ss, :subj .== subj, :freq .== "Low")
+                lo[!, :run] .= 1:nrow(lo)
+                hi = @subset(ss, :subj .== subj, :freq .== "High")
+                hi[!, :run] .= 1:nrow(hi)
+                return vcat(lo, hi)
+            end
+            return subj_results
+        end
+    end
+    df = vcat(vcat(temp...)...)
+
+    # Remove level discrimination 1 comp 
+    df = @subset(df, :n_comp .!= 1)
+
+    # Create figure
+    fig = Figure(; size=(550, 300))
+    axs = [Axis(fig[1, j]) for j in 1:2]
+
+    # Map through conditions and plot
+    for (ax, rove) in zip(axs, ["Level discrimination", "Profile analysis"])
+        for freq in ["Low", "High"]
+            # Subset data to n_comp and task condition
+            ss = @subset(df, :task .== rove, :freq .== freq)
+
+            # Loop over first and last run
+            map(1:12) do run
+                # Compute and plot average thresholds across subjs
+                temp = @subset(ss, :run .== run)
+                avg = mean(temp.threshold)
+                err = 1.96*std(temp.threshold)/sqrt(length(temp.threshold))
+                errorbars!(ax, [run], [avg], [err]; color=freq_colors[lowercase(freq)], whiskerwidth=10.0, linewidth=3.0)
+                scatter!(ax, [run], [avg]; color=freq_colors[lowercase(freq)], markersize=15.0)
+                if freq == "High"
+                    scatter!(ax, [run], [avg]; color=:white, markersize=6.0)
+                end
+                return temp
+            end
+        end
+        # Set limits
+        ylims!(ax, (-20.0, 16.0))
+        ax.xticks = 1:12
+        xlims!(ax, (0, 13))
+        ax.xminorticksvisible = false
+        hideydecorations!(ax; ticklabels=(rove == "Level discrimination" ? false : true), ticks=false)
+
+        vlines!(ax, [6.5]; color=:gray, linestyle=:dash)
+    end
+
+    # Add labels
+    Label(fig[end+1, :], "Run"; fontsize=20.0)
+    Label(fig[1, 0], "Threshold (dB SRS)"; rotation=π/2, fontsize=20.0)
+    Label(fig[0, 1], "Unroved"; fontsize=20.0, tellwidth=false)
+    Label(fig[0, 2], "Roved"; fontsize=20.0, tellwidth=false)
+    rowgap!(fig.layout, 2, 1.0)
+    colgap!(fig.layout, 1, 1.0)
+  
+    # Render
+    fig
+end
+
+function plot_fig_r1_learning_v3()
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "ripple_discrimination_with_run_info.csv")))
+
+    # Create figure
+    fig = Figure(; size=(550, 300))
+    axs = [Axis(fig[1, j]) for j in 1:2]
+
+    # Map through conditions and plot
+    for (ax, rove) in zip(axs, ["Control", "Task"])
+        for freq in ["Low", "High"]
+            # Subset data to n_comp and task condition
+            ss = @subset(df, :task .== rove, :freq .== freq)
+
+            # Loop over first and last run
+            map(1:6) do run
+                # Compute and plot average thresholds across subjs
+                temp = @subset(ss, :run .== run)
+                avg = mean(temp.threshold)
+                err = 1.96*std(temp.threshold)/sqrt(length(temp.threshold))
+                errorbars!(ax, [run], [avg], [err]; color=freq_colors[lowercase(freq)], whiskerwidth=10.0, linewidth=3.0)
+                scatter!(ax, [run], [avg]; color=freq_colors[lowercase(freq)], markersize=15.0)
+                if freq == "High"
+                    scatter!(ax, [run], [avg]; color=:white, markersize=6.0)
+                end
+                return temp
+            end
+        end
+        # Set limits
+#        ylims!(ax, (-20.0, 16.0))
+        ax.xticks = 1:6
+        xlims!(ax, (0, 7))
+        ax.xminorticksvisible = false
+#        hideydecorations!(ax; ticklabels=(rove == "Level discrimination" ? false : true), ticks=false)
+
+#        vlines!(ax, [6.5]; color=:gray, linestyle=:dash)
+    end
+
+    # Add labels
+    Label(fig[end+1, :], "Run"; fontsize=20.0)
+    Label(fig[1, 0], "Threshold [20 log10 m]"; rotation=π/2, fontsize=20.0)
+    Label(fig[0, 1], "Detection"; fontsize=20.0, tellwidth=false)
+    Label(fig[0, 2], "Discrimination"; fontsize=20.0, tellwidth=false)
+    rowgap!(fig.layout, 2, 1.0)
+    colgap!(fig.layout, 1, 1.0)
+  
+    # Render
+    fig
+end
+
+
+
+function plot_fig_pa2_learning_v3()
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_with_order.csv")))
+    df = @orderby(df, :n_comp)
+    mapper = Dict("Control" => "Level discrimination", "Task" => "Profile analysis")
+    df[!, :task] = [mapper[x] for x in df.task]
+
+    # Create list of conditions to loop through
+    conds = Iterators.product([9], ["Level discrimination", "Profile analysis"])
+
+    # Map over conditions to create new dataframe that contains information about run (assuming that the order of rows inidcates the order of runs, persuant with AFC style)
+    temp = map(conds) do (n_comp, task)
+        # If we're in the 1-component profile analysis condition, continue
+        if (n_comp == 1) & (task == "Profile analysis")
+            return DataFrame()
+        else
+            # Subset data to n_comp and task condition
+            ss = @subset(df, :task .== task, :n_comp .== n_comp)
+
+            # Select unique subjects
+            subjs = unique(df.subj)
+
+            # Loop through each subject and add run info
+            subj_results = map(subjs) do subj
+                lo = @subset(ss, :subj .== subj, :freq .== "Low")
+                lo[!, :run] .= 1:nrow(lo)
+                hi = @subset(ss, :subj .== subj, :freq .== "High")
+                hi[!, :run] .= 1:nrow(hi)
+                return vcat(lo, hi)
+            end
+            return subj_results
+        end
+    end
+    df = vcat(vcat(temp...)...)
+
+    # Create figure
+    fig = Figure(; size=(550, 300))
+    axs = [Axis(fig[1, j]) for j in 1:2]
+
+    # Map through conditions and plot
+    for (ax, rove) in zip(axs, ["Level discrimination", "Profile analysis"])
+        for freq in ["Low", "High"]
+            # Subset data to n_comp and task condition
+            ss = @subset(df, :task .== rove, :freq .== freq)
+
+            # Loop over first and last run
+            map(1:12) do run
+                # Compute and plot average thresholds across subjs
+                temp = @subset(ss, :run .== run)
+                avg = mean(temp.threshold)
+                err = 1.96*std(temp.threshold)/sqrt(length(temp.threshold))
+                errorbars!(ax, [run], [avg], [err]; color=freq_colors[lowercase(freq)], whiskerwidth=10.0, linewidth=3.0)
+                scatter!(ax, [run], [avg]; color=freq_colors[lowercase(freq)], markersize=15.0)
+                if freq == "High"
+                    scatter!(ax, [run], [avg]; color=:white, markersize=6.0)
+                end
+                return temp
+            end
+        end
+        # Set limits
+        ylims!(ax, (-20.0, 16.0))
+        ax.xticks = 1:12
+        xlims!(ax, (0, 13))
+        ax.xminorticksvisible = false
+        hideydecorations!(ax; ticklabels=(rove == "Level discrimination" ? false : true), ticks=false)
+    end
+
+    # Add labels
+    Label(fig[end+1, :], "Run"; fontsize=20.0)
+    Label(fig[:, 0], "Threshold (dB SRS)"; rotation=π/2, fontsize=20.0)
+    Label(fig[0, 1], "Unroved"; fontsize=20.0, tellwidth=false)
+    Label(fig[0, 2], "Roved"; fontsize=20.0, tellwidth=false)
+    rowgap!(fig.layout, 2, Relative(0.01))
+    colgap!(fig.layout, 1, Relative(0.01))
+  
+    # Render
+    fig
+end
+
 function plot_fig_pa2_sl()
     # Load threshold data from disk
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.1_screen_audibility_extra_2024_clean_data.csv")))
@@ -427,7 +642,8 @@ function plot_fig_pa2_sl()
     # Map through subjects and take only last two runs
     dfs = map(unique(df.subj)) do subj
         ss = @subset(df, :subj .== subj)
-        return ss[(end-3):end, :]
+ #       return ss[(end-3):end, :]
+         return ss
     end
     df = vcat(dfs...)
 
@@ -439,6 +655,9 @@ function plot_fig_pa2_sl()
 
     # Unstack by ear
     df_avg = unstack(df_avg, :ear, :threshold_mean) 
+
+    # Temporarily fix right x35
+    df_avg[df_avg.subj .== "x35", :Right] .= 33.0
 
     # Add passed and selected ear column
     df_avg[!, :selected_ear] .= "None"
@@ -466,7 +685,7 @@ function plot_fig_pa2_sl()
 
     # Load profile-analysis behavior data 
     # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
-    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_with_order.csv")))
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_restricted.csv")))
 
     # Preproccess to calculate condition-wise means
     df_ind = @chain df begin
@@ -479,6 +698,8 @@ function plot_fig_pa2_sl()
 
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.2_measure_thresholds_extra_2024_clean_data.csv")))
+    df = df[df.sd .!= 0.0, :]  # remove NAN thresholds
+    df.threshold = parse.(Float64, df.threshold)
 
     # Analyze into means
     df_ind = @chain df begin
@@ -567,7 +788,7 @@ end
 
 function plot_fig_pa2()
     # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
-    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_with_order.csv")))
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_restricted.csv")))
 
    # Preproccess to calculate condition-wise means
     df_ind = @chain df begin
@@ -632,11 +853,11 @@ function plot_fig_pa2()
     end
 
     # Add manual labels
-    scatter!(ax, [0.5], [-10.0]; color=freq_colors["low"], kwargs...)
-    text!(ax, [0.8], [-10.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
-    scatter!(ax, [0.5], [-8.0]; color=freq_colors["high"], kwargs...)
-    scatter!(ax, [0.5], [-8.0]; color=:white, kwargs..., markersize=6.0)
-    text!(ax, [0.8], [-8.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
+    scatter!(ax, [0.5], [-14.0]; color=freq_colors["low"], kwargs...)
+    text!(ax, [0.8], [-14.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
+    scatter!(ax, [0.5], [-12.0]; color=freq_colors["high"], kwargs...)
+    scatter!(ax, [0.5], [-12.0]; color=:white, kwargs..., markersize=6.0)
+    text!(ax, [0.8], [-12.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
 
     # Handle x-axis
     ax.xticks = (

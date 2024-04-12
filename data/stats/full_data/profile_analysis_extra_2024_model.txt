@@ -1,0 +1,68 @@
+Linear mixed model fit by REML ['lmerMod']
+Formula: threshold ~ freq * order * task + (1 + task * freq | subj)
+   Data: data
+
+REML criterion at convergence: 1879.4
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.8164 -0.4828  0.2138  0.5104  3.3161 
+
+Random effects:
+ Groups   Name             Variance Std.Dev. Corr             
+ subj     (Intercept)       2.814   1.678                     
+          taskTask          3.736   1.933    -0.93            
+          freqLow           5.085   2.255     0.81 -0.76      
+          taskTask:freqLow 23.073   4.803     0.77 -0.95  0.67
+ Residual                  22.919   4.787                     
+Number of obs: 312, groups:  subj, 13
+
+Fixed effects:
+                        Estimate Std. Error t value
+(Intercept)               9.4296     0.9735   9.686
+freqLow                 -10.4177     1.3483  -7.727
+order2                   -1.7062     1.4330  -1.191
+taskTask                  1.1776     1.2748   0.924
+freqLow:order2           -1.8127     1.9846  -0.913
+freqLow:taskTask         -0.4931     2.3407  -0.211
+order2:taskTask           2.8085     1.8765   1.497
+freqLow:order2:taskTask   4.7812     3.4454   1.388
+
+Correlation of Fixed Effects:
+            (Intr) freqLw order2 tskTsk frqL:2 frqL:T ord2:T
+freqLow     -0.081                                          
+order2      -0.679  0.055                                   
+taskTask    -0.787  0.042  0.535                            
+freqLw:rdr2  0.055 -0.679 -0.081 -0.028                     
+frqLw:tskTs  0.628 -0.019 -0.427 -0.788  0.013              
+ordr2:tskTs  0.535 -0.028 -0.787 -0.679  0.042  0.535       
+frqLw:rd2:T -0.427  0.013  0.628  0.535 -0.019 -0.679 -0.788
+optimizer (nloptwrap) convergence code: 0 (OK)
+Model failed to converge with max|grad| = 0.00429521 (tol = 0.002, component 1)
+
+Analysis of Deviance Table (Type II Wald F tests with Kenward-Roger df)
+
+Response: threshold
+                       F Df Df.res    Pr(>F)    
+freq            129.0049  1     11 2.043e-07 ***
+order             0.0381  1     11 0.8488071    
+task             30.9824  1     11 0.0001686 ***
+freq:order        0.7862  1     11 0.3942275    
+freq:task         0.9954  1     11 0.3398645    
+order:task       17.6572  1     11 0.0014805 ** 
+freq:order:task   1.9257  1     11 0.1926958    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Chisq Test: 
+P-value adjustment method: none
+                    Value Df  Chisq Pr(>Chisq)    
+1-2 : Control-Task 5.1992  1 19.346  2.181e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Chisq Test: 
+P-value adjustment method: none
+                   Value Df   Chisq Pr(>Chisq)    
+Control-Task : 1 -0.9311  1  1.3442     0.2463    
+Control-Task : 2 -6.1302  1 49.9480  4.736e-12 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

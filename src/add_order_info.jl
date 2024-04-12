@@ -2,10 +2,11 @@
 df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024.csv")))
 df = @subset(df, in.(:subj, Ref(subjs_2024())))
 order = Dict(
-    "x01" => 1,
+    "x01" => 2,
     "x02" => 1,
     "x07" => 2,
     "x09" => 2,
+    "x11" => 2,
     "x14" => 2,
     "x15" => 1,
     "x16" => 1,
@@ -13,6 +14,14 @@ order = Dict(
     "x25" => 2,
     "x28" => 1,
     "x29" => 2,
+    "x32" => 2,
+    "x33" => 1,
+    "x34" => 1,
+    "x35" => 1,
+    "x36" => 2,
+    "x37" => 2,
+    "x38" => 1,
+    "x39" => 1,
 )
 df[!, :order] .= getindex.(Ref(order), df.subj)
 CSV.write(

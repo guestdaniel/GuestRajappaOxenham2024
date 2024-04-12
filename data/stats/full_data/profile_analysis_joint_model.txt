@@ -1,0 +1,109 @@
+Linear mixed model fit by REML ['lmerMod']
+Formula: threshold ~ freq * n_comp * task + (freq * n_comp * task | subj)
+   Data: data[data$n_comp != 1, ]
+
+REML criterion at convergence: 12487.2
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.7202 -0.5428  0.1372  0.5767  4.6554 
+
+Random effects:
+ Groups   Name                      Variance Std.Dev. Corr                   
+ subj     (Intercept)                5.868   2.422                           
+          freqLow                    7.271   2.697    -0.42                  
+          n_comp5                    1.007   1.003    -0.71 -0.35            
+          n_comp9                    4.953   2.225    -0.81  0.26  0.63      
+          n_comp15                   3.693   1.922    -0.90  0.16  0.81  0.73
+          taskTask                   4.683   2.164    -0.82  0.37  0.55  0.40
+          freqLow:n_comp5            3.116   1.765     0.21  0.56 -0.66 -0.06
+          freqLow:n_comp9           10.369   3.220     0.61 -0.68 -0.10 -0.56
+          freqLow:n_comp15          10.732   3.276     0.58 -0.46 -0.24 -0.26
+          freqLow:taskTask          18.821   4.338     0.04  0.08 -0.10  0.25
+          n_comp5:taskTask           1.204   1.097     0.18  0.46 -0.55  0.06
+          n_comp9:taskTask           2.437   1.561     0.83 -0.33 -0.60 -0.84
+          n_comp15:taskTask          4.090   2.022     0.78 -0.02 -0.79 -0.44
+          freqLow:n_comp5:taskTask  11.941   3.456     0.12 -0.40  0.19 -0.26
+          freqLow:n_comp9:taskTask  14.924   3.863    -0.02 -0.02  0.03 -0.20
+          freqLow:n_comp15:taskTask 22.952   4.791    -0.02 -0.19  0.17 -0.33
+ Residual                           16.459   4.057                           
+                                                                  
+                                                                  
+                                                                  
+                                                                  
+                                                                  
+                                                                  
+  0.68                                                            
+ -0.52 -0.16                                                      
+ -0.59 -0.34  0.10                                                
+ -0.61 -0.48  0.43  0.82                                          
+  0.04 -0.30  0.36 -0.10  0.24                                    
+ -0.20 -0.55  0.45 -0.33  0.00  0.39                              
+ -0.59 -0.70 -0.12  0.35  0.16 -0.05  0.29                        
+ -0.72 -0.92  0.42  0.15  0.38  0.39  0.72  0.69                  
+ -0.15  0.08 -0.33  0.46  0.17 -0.87 -0.37  0.10 -0.29            
+ -0.04  0.16 -0.19  0.16 -0.04 -0.87 -0.07  0.10 -0.23  0.89      
+  0.04  0.29 -0.51  0.14 -0.26 -0.96 -0.42  0.18 -0.40  0.87  0.87
+                                                                  
+Number of obs: 2191, groups:  subj, 12
+
+Fixed effects:
+                          Estimate Std. Error t value
+(Intercept)                -0.9033     0.7792  -1.159
+freqLow                    -6.1029     0.9182  -6.647
+n_comp5                     5.5104     0.5657   9.741
+n_comp9                     9.8278     0.8054  12.202
+n_comp15                   10.5078     0.7370  14.257
+taskTask                   11.1016     0.7954  13.958
+freqLow:n_comp5            -4.1191     0.8561  -4.812
+freqLow:n_comp9            -8.9350     1.1564  -7.727
+freqLow:n_comp15           -5.7495     1.1692  -4.917
+freqLow:taskTask           -5.4817     1.4343  -3.822
+n_comp5:taskTask           -3.8863     0.7635  -5.090
+n_comp9:taskTask           -7.9674     0.8276  -9.627
+n_comp15:taskTask          -9.7830     0.9075 -10.780
+freqLow:n_comp5:taskTask    0.1339     1.4005   0.096
+freqLow:n_comp9:taskTask    2.5511     1.4881   1.714
+freqLow:n_comp15:taskTask   3.6274     1.6981   2.136
+optimizer (nloptwrap) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')
+
+Analysis of Deviance Table (Type II Wald F tests with Kenward-Roger df)
+
+Response: threshold
+                        F Df  Df.res    Pr(>F)    
+freq             277.4784  1 10.9555 3.969e-09 ***
+n_comp            28.3099  3  8.8546 7.154e-05 ***
+task              34.0064  1 10.9424 0.0001163 ***
+freq:n_comp       21.9666  3  8.9176 0.0001862 ***
+freq:task         33.6117  1 10.9190 0.0001232 ***
+n_comp:task       36.7138  3  8.8725 2.480e-05 ***
+freq:n_comp:task   2.6337  3  8.8979 0.1144836    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Chisq Test: 
+P-value adjustment method: none
+                            Value Df    Chisq Pr(>Chisq)    
+Control-Task : High :  3 -11.1016  1 194.8205  < 2.2e-16 ***
+Control-Task :  Low :  3  -5.6199  1  18.1168  0.0001247 ***
+Control-Task : High :  5  -7.2153  1 101.2636  < 2.2e-16 ***
+Control-Task :  Low :  5  -1.8675  1   5.8269  0.0631333 .  
+Control-Task : High :  9  -3.1342  1  22.2507  1.675e-05 ***
+Control-Task :  Low :  9  -0.2036  1   0.0652  0.8021730    
+Control-Task : High : 15  -1.3187  1   5.8005  0.0631333 .  
+Control-Task :  Low : 15   0.5356  1   0.7051  0.8021730    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Chisq Test: 
+P-value adjustment method: none
+                      Value Df    Chisq Pr(>Chisq)    
+Control-Task : High -5.6925  1 150.7089    < 2e-16 ***
+Control-Task :  Low -1.7888  1   9.0991    0.01279 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Chisq Test: 
+P-value adjustment method: none
+                          Value Df  Chisq Pr(>Chisq)    
+Control-Task : High-Low -3.9036  1 37.687  6.643e-09 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

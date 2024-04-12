@@ -11,7 +11,7 @@ source(file.path("src", "utils.R"))
 dir_out = file.path("data", "stats")
 
 # Import data
-data = read.csv(file.path("data", "exp_pro", "profile_analysis.csv"))
+data = read.csv(file.path("data", "exp_pro", "profile_analysis_restricted.csv"))
 data = data[!is.nan(data$threshold), ]
 data$n_comp = factor(data$n_comp)
 
@@ -36,14 +36,14 @@ model_contrast_2 = testInteractions(model, pairwise="n_comp", adjustment="none")
 model_contrast_2 = model_contrast_2[c(1, 5, 8, 10), ]
 # n_comp * frequency contrast (test 1 vs 15 for low and high)
 model_contrast_3 = testInteractions(model, pairwise=c("n_comp", "freq"), adjustment="none")
-model_contrast_3 = model_contrast_3[4, ]
+model_contrast_3 = model_contrast_3[c(1, 2, 3, 4), ]
 # Adjust p-values
 p_vals = c(model_contrast_1[, "Pr(>Chisq)"], model_contrast_1pt5[, "Pr(>Chisq)"], model_contrast_2[, "Pr(>Chisq)"], model_contrast_3[, "Pr(>Chisq)"])
 p_vals = p.adjust(p_vals, method="holm")
 model_contrast_1[, "Pr(>Chisq)"] = p_vals[1]
 model_contrast_1pt5[, "Pr(>Chisq)"] = p_vals[2]
 model_contrast_2[, "Pr(>Chisq)"] = p_vals[3:6]
-model_contrast_3[, "Pr(>Chisq)"] = p_vals[7]
+model_contrast_3[, "Pr(>Chisq)"] = p_vals[7:10]
 
 # Analyze model
 sink(file.path(dir_out, paste0(name, "model.txt")))
@@ -83,7 +83,6 @@ sink(file.path(dir_out, paste0(name, "model.txt")))
 summary(model)
 model_anova
 model_contrast_1
-model_contrast_2
 model_contrast_3
 sink()
 

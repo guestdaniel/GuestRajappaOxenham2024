@@ -1,13 +1,9 @@
 # Libraries
-library(ggplot2)
 library(dplyr)
 library(lme4)
 library(car)
 library(phia)
 library(effects)
-library(lmerTest)
-library(merTools)
-library(customR)
 source('scripts/aim3/utils.R')
 
 # Set up directories

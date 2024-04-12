@@ -1,5 +1,4 @@
 # Libraries
-library(ggplot2)
 library(dplyr)
 library(lme4)
 library(car)

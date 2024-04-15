@@ -30,6 +30,7 @@ include("control_models.jl")  # control observer models
 include("plotting.jl")        # plotting code
 include("numbers.jl")
 
-subjs_2024() = ["x01", "x02", "x07", "x09", "x11", "x14", "x15", "x16", "x17", "x25", "x28", "x29", "x32", "x33", "x34", "x35", "x36", "x37", "x38", "x39"]
+# List subjects to include for 2024 plots
+subjs_2024() = ["x01", "x02", "x07", "x09", "x11", "x14", "x15", "x16", "x17", "x25", "x28", "x29", "x32", "x33", "x34", "x35", "x36", "x37", "x38", "x39", "x41", "x43"]
 
 end # module GuestRajappaOxenham2024

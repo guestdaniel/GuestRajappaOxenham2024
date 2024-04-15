@@ -1,71 +1,59 @@
 Linear mixed model fit by REML ['lmerMod']
-Formula: threshold ~ freq * run_group + (1 + freq | subj) + (1 + run_group |  
-    subj)
-   Data: data_ss
+Formula: threshold ~ freq + (freq | subj)
+   Data: data_adj
 
-REML criterion at convergence: 12850.7
+REML criterion at convergence: 1142.7
 
 Scaled residuals: 
-    Min      1Q  Median      3Q     Max 
--3.4275 -0.6362  0.1570  0.7862  3.6884 
+     Min       1Q   Median       3Q      Max 
+-2.52789 -0.45823 -0.03294  0.57531  2.28072 
 
 Random effects:
- Groups   Name        Variance Std.Dev. Corr             
- subj     (Intercept)  0.71332 0.8446                    
-          freqLow      7.52825 2.7438   -0.10            
- subj.1   (Intercept)  0.00000 0.0000                    
-          run_group2   0.29983 0.5476     NaN            
-          run_group3   0.07704 0.2776     NaN -1.00      
-          run_group4   0.18425 0.4292     NaN -1.00  1.00
- Residual             27.51351 5.2453                    
-Number of obs: 2081, groups:  subj, 11
+ Groups   Name        Variance Std.Dev. Corr                         
+ subj     (Intercept)  2.590   1.609                                 
+          freq487      2.311   1.520    -0.64                        
+          freq798      2.112   1.453    -0.45  0.86                  
+          freq6100     3.528   1.878    -0.85  0.57  0.38            
+          freq9909    10.186   3.192    -0.32  0.48  0.00  0.30      
+          freq16100    7.528   2.744    -0.39 -0.03 -0.23  0.65  0.07
+ Residual              2.125   1.458                                 
+Number of obs: 275, groups:  subj, 22
 
 Fixed effects:
-                   Estimate Std. Error t value
-(Intercept)          8.7307     0.4112  21.234
-freqLow            -10.2981     0.9449 -10.899
-run_group2          -0.2653     0.4855  -0.546
-run_group3          -0.5323     0.4659  -1.143
-run_group4          -0.5880     0.4805  -1.224
-freqLow:run_group2  -1.5930     0.6457  -2.467
-freqLow:run_group3  -3.2400     0.6479  -5.001
-freqLow:run_group4  -3.9011     0.6541  -5.964
+            Estimate Std. Error t value
+(Intercept)  -0.2566     0.4057  -0.633
+freq487       0.3535     0.4456   0.793
+freq798       0.4223     0.4350   0.971
+freq6100     -0.1843     0.5054  -0.365
+freq9909      2.0021     0.7463   2.683
+freq16100     2.1443     0.6603   3.247
 
 Correlation of Fixed Effects:
-            (Intr) freqLw rn_gr2 rn_gr3 rn_gr4 frL:_2 frL:_3
-freqLow     -0.322                                          
-run_group2  -0.522  0.227                                   
-run_group3  -0.544  0.237  0.400                            
-run_group4  -0.528  0.230  0.355  0.515                     
-frqLw:rn_g2  0.393 -0.342 -0.665 -0.346 -0.336              
-frqLw:rn_g3  0.391 -0.340 -0.331 -0.696 -0.335  0.498       
-frqLw:rn_g4  0.387 -0.337 -0.328 -0.342 -0.680  0.494  0.493
-optimizer (nloptwrap) convergence code: 0 (OK)
-boundary (singular) fit: see help('isSingular')
-
+          (Intr) frq487 frq798 fr6100 fr9909
+freq487   -0.656                            
+freq798   -0.533  0.689                     
+freq6100  -0.798  0.539  0.426              
+freq9909  -0.403  0.461  0.143  0.338       
+freq16100 -0.466  0.143  0.018  0.598  0.152
 Analysis of Deviance Table (Type II Wald F tests with Kenward-Roger df)
 
 Response: threshold
-                     F Df  Df.res    Pr(>F)    
-freq           210.345  1   10.00 4.835e-08 ***
-run_group       16.358  3    7.96 0.0009139 ***
-freq:run_group  14.403  3 2024.27 2.759e-09 ***
+         F Df Df.res   Pr(>F)   
+freq 6.069  5 16.793 0.002186 **
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+   freq adjusted mean SE of link
+1   300      41.11897  0.4057480
+2   487      41.47252  0.3548523
+3   798      41.54128  0.4070139
+4  6100      40.93471  0.3048569
+5  9909      43.12112  0.6909985
+6 16100      43.26323  0.5923915
 Chisq Test: 
-P-value adjustment method: holm
-            Value Df   Chisq Pr(>Chisq)    
-1-2 : High 0.2653  1  0.2986   1.000000    
-1-3 : High 0.5323  1  1.3053   1.000000    
-1-4 : High 0.5880  1  1.4977   1.000000    
-2-3 : High 0.2670  1  0.2622   1.000000    
-2-4 : High 0.3227  1  0.3461   1.000000    
-3-4 : High 0.0557  1  0.0142   1.000000    
-1-2 :  Low 1.8583  1 14.6511   0.001164 ** 
-1-3 :  Low 3.7723  1 65.6739  5.853e-15 ***
-1-4 :  Low 4.4891  1 87.2196  < 2.2e-16 ***
-2-3 :  Low 1.9140  1 13.4902   0.001919 ** 
-2-4 :  Low 2.6308  1 22.9907  1.628e-05 ***
-3-4 :  Low 0.7167  1  2.3648   0.868679    
+P-value adjustment method: none
+         Value Df   Chisq Pr(>Chisq)   
+ 6100 -0.44089  1  2.0917   0.148104   
+ 9909  1.74552  1  6.3820   0.023057 * 
+16100  1.88763  1 10.1515   0.004326 **
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

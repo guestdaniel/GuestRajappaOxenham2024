@@ -12,6 +12,8 @@ dir_out = 'data/stats'
 # Import data
 data = read.csv(file.path("data", "exp_pro", "ripple_discrimination_extra_2024.csv"))
 data = data[!is.nan(data$threshold), ]
+data = data[data$subj != "x43", ]  # 0 dB threshold in all detection
+data = data[data$subj != "x33", ]  # 0 dB threshold in HF detection
 
 # Set up model
 model = lmer(threshold ~ freq*task + (freq*task|subj), data=data)

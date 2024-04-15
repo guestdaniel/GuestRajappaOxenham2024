@@ -22,6 +22,8 @@ order = Dict(
     "x37" => 2,
     "x38" => 1,
     "x39" => 1,
+    "x41" => 2,
+    "x43" => 2,
 )
 df[!, :order] .= getindex.(Ref(order), df.subj)
 CSV.write(

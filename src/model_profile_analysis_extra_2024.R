@@ -25,17 +25,17 @@ name = "profile_analysis_extra_2024_"
 model_anova = Anova(model, test="F")
 
 # Calculate contrasts
-model_contrast_1 = testInteractions(model, pairwise=c("order", "task"), adjustment="none")
-model_contrast_2 = testInteractions(model, pairwise=c("task"), fixed="order", adjustment="none")
-p_vals = c(model_contrast_1[, "Pr(>Chisq)"], model_contrast_2[, "Pr(>Chisq)"])
-p_vals = p.adjust(p_vals, method="holm")
-model_contrast_1[, "Pr(>Chisq)"] = p_vals[1]
-model_contrast_2[, "Pr(>Chisq)"] = p_vals[2:length(p_vals)]
+model_contrast_1 = testInteractions(model, pairwise=c("order", "task"), fixed="freq", adjustment="holm")
+#model_contrast_2 = testInteractions(model, pairwise=c("task"), fixed="order", adjustment="none")
+#p_vals = c(model_contrast_1[, "Pr(>Chisq)"], model_contrast_2[, "Pr(>Chisq)"])
+#p_vals = p.adjust(p_vals, method="holm")
+#model_contrast_1[, "Pr(>Chisq)"] = p_vals[1]
+#model_contrast_2[, "Pr(>Chisq)"] = p_vals[2:length(p_vals)]
 
 # Analyze model
 sink(file.path(dir_out, paste0(name, "model.txt")))
 summary(model)
 model_anova
 model_contrast_1
-model_contrast_2
+#model_contrast_2
 sink()

@@ -642,7 +642,6 @@ function plot_fig_pa2_sl()
     # Map through subjects and take only last two runs
     dfs = map(unique(df.subj)) do subj
         ss = @subset(df, :subj .== subj)
- #       return ss[(end-3):end, :]
          return ss
     end
     df = vcat(dfs...)
@@ -655,9 +654,6 @@ function plot_fig_pa2_sl()
 
     # Unstack by ear
     df_avg = unstack(df_avg, :ear, :threshold_mean) 
-
-    # Temporarily fix right x35
-    df_avg[df_avg.subj .== "x35", :Right] .= 33.0
 
     # Add passed and selected ear column
     df_avg[!, :selected_ear] .= "None"
@@ -779,8 +775,8 @@ function plot_fig_pa2_sl()
 
     ylims!(ax, 0.0, 15.0)
     xlims!(ax, 10.0, 60.0)
-    text!(ax, [40.0], [4.5]; text="R2 = $(round(r2(model); digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
-    text!(ax, [40.0], [3.0]; text="p = $(round(pval; digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
+    text!(ax, [15.0], [2.5]; text="R2 = $(round(r2(model); digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
+    text!(ax, [15.0], [1.0]; text="p = $(round(pval; digits=2))", color=freq_colors["high"], fontsize=20.0, font="Arial bold")
     set_theme!(theme_thesis())
 
     fig
@@ -790,7 +786,7 @@ function plot_fig_pa2()
     # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_restricted.csv")))
 
-   # Preproccess to calculate condition-wise means
+    # Preproccess to calculate condition-wise means
     df_ind = @chain df begin
         groupby([:freq, :task, :n_comp, :order, :subj])
         @combine(:threshold = mean(:threshold))
@@ -1011,6 +1007,8 @@ function plot_fig_r2a()
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "ripple_discrimination_extra_2024.csv")));
     df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = @subset(df, :subj .!= "x43")  # exclude x43 (0 dB threshold for both detection)
+    df = @subset(df, :subj .!= "x33")  # exclude x33 (0 dB threshold for HF detection)
 
     # Compute individual and group means
     df_ind = @chain df begin
@@ -1062,6 +1060,8 @@ function plot_fig_r2b()
     # Load data
     df = DataFrame(CSV.File("data/exp_pro/ripple_discrimination_extra_2024.csv"));
     df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = @subset(df, :subj .!= "x43")  # exclude x43 (0 dB threshold for both detection)
+    df = @subset(df, :subj .!= "x33")  # exclude x33 (0 dB threshold for HF detection)
 
     # Compute individual and group means
     df_ind = @chain df begin

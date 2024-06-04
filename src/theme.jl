@@ -51,6 +51,16 @@ function theme_thesis()
             ticksvisible = false,
             spinewidth = 0,
             ticklabelpad = 5,
+        ),
+        Lines = (
+            linewidth = 3.0,
+        ),
+        Scatter = (
+            markersize=18.0,
+        ),
+        Errorbars = (
+            linewidth = 3.0,
+            whiskerwidth = 12.0,
         )
     )
 end

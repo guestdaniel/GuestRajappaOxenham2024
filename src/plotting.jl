@@ -1,4 +1,4 @@
-export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl, plot_schematic_an_response, plot_fig_pa1_learning_v3, plot_fig_pa2_learning_v3, plot_fig_r1_learning_v3
+export plot_fig_thr, plot_schematic_stimulus, plot_fig_pa1_learning, plot_fig_pa1_learning_v2, plot_fig_pa1, plot_fig_pa2, plot_fig_r1a, plot_fig_r1b, plot_fig_r2a, plot_fig_r2b, plot_fig_pa2_sl, plot_schematic_an_response, plot_fig_pa1_learning_v3, plot_fig_pa2_learning_v3, plot_fig_r1_learning_v3, plot_corr_exp1b_2b, plot_corr_diff_exp1b_2b
 
 function plot_schematic_stimulus(freq, n_comp)
     fig = Figure(; size=(350, 350))
@@ -72,12 +72,6 @@ function plot_schematic_an_response(freq, n_comp; n_cf=301, fig=Figure(; size=(3
 end
 
 function plot_fig_thr()
-    kwargs = [
-        :markersize => 18.0,
-        :linewidth => 3.0,
-        :whiskerwidth => 12.0,
-    ]
-
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "0.2_measure_thresholds_extra_2024_clean_data.csv")))
     df = @subset(df, in.(:subj, Ref(subjs_2024())))
@@ -108,10 +102,10 @@ function plot_fig_thr()
 
         # Plot means
         color_temp = freq < 6100 ? freq_colors["low"] : freq_colors["high"]
-        errorbars!(ax, [offset], ss_avg.threshold_mean, ss_avg.threshold_error; color=color_temp, kwargs...)
-        scatter!(ax, [offset], ss_avg.threshold_mean; color=color_temp, kwargs...)
+        errorbars!(ax, [offset], ss_avg.threshold_mean, ss_avg.threshold_error; color=color_temp)
+        scatter!(ax, [offset], ss_avg.threshold_mean; color=color_temp)
         if freq > 1000
-            scatter!(ax, [offset], ss_avg.threshold_mean; color=:white, kwargs..., markersize=10.0)
+            scatter!(ax, [offset], ss_avg.threshold_mean; color=:white, markersize=10.0)
         end
 
         # Plot individual data
@@ -156,11 +150,6 @@ function plot_fig_pa1()
     fig = Figure(; size=(600, 400))
     ax = Axis(fig[1, 1])
     colors = [freq_colors["low"], freq_colors["high"]]
-    kwargs = [
-        :markersize => 18.0,
-        :linewidth => 3.0,
-        :whiskerwidth => 12.0,
-    ]
 
     # Assign locations
     x_ld = [1]
@@ -176,8 +165,8 @@ function plot_fig_pa1()
     temp = calc_θ_overall_level_unroved(df)
     θ_control_low = [x[1] for x in temp]
     θ_control_high = [x[2] for x in temp]
-    lines!(ax, x_unroved, θ_control_low; color=freq_colors["low"], linestyle=:dash, kwargs...)
-    lines!(ax, x_unroved, θ_control_high; color=freq_colors["high"], linestyle=:dash, kwargs...)
+    lines!(ax, x_unroved, θ_control_low; color=freq_colors["low"], linestyle=:dash, linewidth=3.0)
+    lines!(ax, x_unroved, θ_control_high; color=freq_colors["high"], linestyle=:dash, linewidth=3.0)
 
     # Plot roved control model
     fn_cache = projectdir("cache", "roved__control.jld2")
@@ -187,9 +176,9 @@ function plot_fig_pa1()
         temp = calc_θ_overall_level_roved()
         save(fn_cache, Dict("data" => temp))
     end
-    lines!(ax, x_roved, temp; color=:lightgray, linestyle=:dash, kwargs...)
+    lines!(ax, x_roved, temp; color=:lightgray, linestyle=:dash, linewidth=3.0)
     temp = calc_θ_ΔL_roved()
-    lines!(ax, [x_roved[1], x_roved[end]], [temp, temp]; color=:lightgray, linestyle=:dot, kwargs...)
+    lines!(ax, [x_roved[1], x_roved[end]], [temp, temp]; color=:lightgray, linestyle=:dot, linewidth=3.0)
 
     # Plot level discrimination data
     ss = @subset(df_avg, :n_comp .== 1)
@@ -197,13 +186,13 @@ function plot_fig_pa1()
     map(zip(["Low", "High"], colors)) do (freq, color)
         group = @subset(ss, :freq .== freq)
         group_ind = @subset(ss_ind, :freq .== freq)
-        errorbars!(ax, x_ld, group.threshold_mean, group.threshold_error; color=color, kwargs...)
-        scatter!(ax, x_ld, group.threshold_mean; color=color, kwargs...)
+        errorbars!(ax, x_ld, group.threshold_mean, group.threshold_error; color=color, linewidth=3.0, whiskerwidth=12.0)
+        scatter!(ax, x_ld, group.threshold_mean; color=color, markersize=18.0)
         jitter = scale .* randn(nrow(group_ind))
-        scatter!(ax, fill(x_ld[1], nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=color, kwargs..., markersize=10.0)
+        scatter!(ax, fill(x_ld[1], nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=color, markersize=10.0)
         if freq == "High"
-            scatter!(ax, x_ld, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
-            scatter!(ax, fill(x_ld[1], nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=:white, kwargs..., markersize=3.0)
+            scatter!(ax, x_ld, group.threshold_mean; color=:white, markersize=6.0)
+            scatter!(ax, fill(x_ld[1], nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=:white, markersize=3.0)
         end
     end
 
@@ -221,18 +210,18 @@ function plot_fig_pa1()
         end
         map(zip(["Low", "High"], colors)) do (freq, color)
             group = @subset(ss, :freq .== freq)
-            errorbars!(ax, x, group.threshold_mean, group.threshold_error; color=color, kwargs...)
-            scatter!(ax, x, group.threshold_mean; color=color, kwargs...)
+            errorbars!(ax, x, group.threshold_mean, group.threshold_error; color=color, linewidth=3.0, whiskerwidth=12.0)
+            scatter!(ax, x, group.threshold_mean; color=color, markersize=18.0)
             if freq == "High"
-                scatter!(ax, x, group.threshold_mean; color=:white, kwargs..., markersize=6.0)
+                scatter!(ax, x, group.threshold_mean; color=:white, markersize=6.0)
             end
 
             map(zip([3, 5, 9, 15], x)) do (n_comp, this_x)
                 group_ind = @subset(ss_ind, :freq .== freq, :n_comp .== n_comp)
                 jitter = scale .* randn(nrow(group_ind))
-                scatter!(ax, fill(this_x, nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=color, kwargs..., markersize=10.0)
+                scatter!(ax, fill(this_x, nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=color, markersize=10.0)
                 if freq == "High"
-                    scatter!(ax, fill(this_x, nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=:white, kwargs..., markersize=3.0)
+                    scatter!(ax, fill(this_x, nrow(group_ind)) .+ offset .+ jitter, group_ind.threshold; color=:white, markersize=3.0)
                 end
             end
         end
@@ -255,10 +244,10 @@ function plot_fig_pa1()
 #     end
 
     # Add manual labels
-    scatter!(ax, [1.0], [8.0]; color=freq_colors["low"], kwargs...)
+    scatter!(ax, [1.0], [8.0]; color=freq_colors["low"], markersize=18.0)
     text!(ax, [1.3], [8.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
-    scatter!(ax, [1.0], [10.0]; color=freq_colors["high"], kwargs...)
-    scatter!(ax, [1.0], [10.0]; color=:white, kwargs..., markersize=6.0)
+    scatter!(ax, [1.0], [10.0]; color=freq_colors["high"], markersize=18.0)
+    scatter!(ax, [1.0], [10.0]; color=:white, markersize=6.0)
     text!(ax, [1.3], [10.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
 
     # Handle x-axis
@@ -738,15 +727,10 @@ function plot_fig_pa2_sl()
 
     # Now plot!
     fig = Figure(; size=(340, 550))
-    kwargs = [
-        :markersize => 18.0,
-        :linewidth => 3.0,
-        :whiskerwidth => 12.0,
-    ]
 
     # PLOT ABS THR
     ax = Axis(fig[1, 1])
-    scatter!(ax, df.thr_abs, df.thr_pa; color=freq_colors["high"], kwargs...)
+    scatter!(ax, df.thr_abs, df.thr_pa; color=freq_colors["high"])
     ax.xlabel = "Absolute threshold (dB SPL)"
     ax.ylabel = "Profile-analysis\nthreshold (dB SRS)"
 
@@ -763,7 +747,7 @@ function plot_fig_pa2_sl()
 
     # PLOT MSK THR
     ax = Axis(fig[2, 1])
-    scatter!(ax, df.thr_msk, df.thr_pa; color=freq_colors["high"], kwargs...)
+    scatter!(ax, df.thr_msk, df.thr_pa; color=freq_colors["high"])
     ax.xlabel = "Masked threshold (dB SPL)"
     ax.ylabel = "Profile-analysis\nthreshold (dB SRS)"
 
@@ -808,11 +792,6 @@ function plot_fig_pa2()
     fig = Figure(; size=(450, 400))
     ax = Axis(fig[1, 1])
     colors = [freq_colors["low"], freq_colors["high"]]
-    kwargs = [
-        :markersize => 18.0,
-        :linewidth => 3.0,
-        :whiskerwidth => 12.0,
-    ]
 
     # Plot guidelines
     hlines!(ax, [13.0]; color=:red)  # one gray line at 13 dB SRS to indicate ceiling max
@@ -832,27 +811,27 @@ function plot_fig_pa2()
         map(seq) do (task, order, offset)
             # Plot avg data
             datum = @subset(ss, :order .== order, :task .== task)
-            errorbars!(ax, [offset], datum.threshold_mean, datum.threshold_error; color=color, kwargs...)
-            scatter!(ax, [offset], datum.threshold_mean; color=color, kwargs...)
+            errorbars!(ax, [offset], datum.threshold_mean, datum.threshold_error; color=color)
+            scatter!(ax, [offset], datum.threshold_mean; color=color)
             if freq == "High"
-                scatter!(ax, [offset], datum.threshold_mean; color=:white, kwargs..., markersize=6.0)
+                scatter!(ax, [offset], datum.threshold_mean; color=:white, markersize=6.0)
             end
 
             # Plot individual data
             datum = @subset(ss_ind, :order .== order, :task .== task)
             x = fill(offset[1], nrow(datum)) .+ 0.3 .+ 0.02*randn(nrow(datum))
-            scatter!(ax, x, datum.threshold; color=color, kwargs..., markersize=10.0)
+            scatter!(ax, x, datum.threshold; color=color, markersize=10.0)
             if freq == "High"
-                scatter!(ax, x, datum.threshold; color=:white, kwargs..., markersize=3.0)
+                scatter!(ax, x, datum.threshold; color=:white, markersize=3.0)
             end
         end
     end
 
     # Add manual labels
-    scatter!(ax, [0.5], [-14.0]; color=freq_colors["low"], kwargs...)
+    scatter!(ax, [0.5], [-14.0]; color=freq_colors["low"])
     text!(ax, [0.8], [-14.0]; color=freq_colors["low"], text="Low", fontsize=20.0, font="Arial bold", align=(:left, :center))
-    scatter!(ax, [0.5], [-12.0]; color=freq_colors["high"], kwargs...)
-    scatter!(ax, [0.5], [-12.0]; color=:white, kwargs..., markersize=6.0)
+    scatter!(ax, [0.5], [-12.0]; color=freq_colors["high"])
+    scatter!(ax, [0.5], [-12.0]; color=:white, markersize=6.0)
     text!(ax, [0.8], [-12.0]; color=freq_colors["high"], text="High", fontsize=20.0, font="Arial bold", align=(:left, :center))
 
     # Handle x-axis
@@ -881,12 +860,6 @@ function plot_fig_pa2()
 end
 
 function plot_fig_r1a()
-    kwargs = [
-        :markersize => 18.0,
-        :linewidth => 3.0,
-        :whiskerwidth => 12.0,
-    ]
-
     # Load data
     df = DataFrame(CSV.File(projectdir("data", "exp_pro", "ripple_discrimination.csv")));
 
@@ -919,13 +892,13 @@ function plot_fig_r1a()
         ss = @subset(df_ind, :freq .== freq, :task .== task)
         μ = mean(ss.threshold_mean)
         err = 1.96 * std(ss.threshold_mean)/sqrt(nrow(ss))
-        errorbars!(ax, [offset], [μ], [err]; color=freq_colors[lowercase(freq)], kwargs...)
-        scatter!(ax, [offset], [μ]; color=freq_colors[lowercase(freq)], kwargs...)
+        errorbars!(ax, [offset], [μ], [err]; color=freq_colors[lowercase(freq)])
+        scatter!(ax, [offset], [μ]; color=freq_colors[lowercase(freq)])
         if freq == "High"
-            scatter!(ax, [offset], [μ]; color=:white, kwargs..., markersize=10.0)
+            scatter!(ax, [offset], [μ]; color=:white, markersize=10.0)
         end
         x = fill(offset, nrow(ss)) .+ 0.3 .+ 0.03*randn(nrow(ss))
-        scatter!(ax, x, ss.threshold_mean; color=freq_colors[lowercase(freq)], kwargs..., markersize=10.0)
+        scatter!(ax, x, ss.threshold_mean; color=freq_colors[lowercase(freq)], markersize=10.0)
     end
     fig
     return fig
@@ -963,10 +936,10 @@ function plot_fig_r1b()
         err = 1.96 * std(ss.diff)/sqrt(nrow(ss))
 
         # Plot means and errorbars
-        errorbars!(ax, [x], [μ], [err]; color=freq_colors[lowercase(freq)], kwargs...)
-        scatter!(ax, [x], [μ]; color=freq_colors[lowercase(freq)], kwargs...)
+        errorbars!(ax, [x], [μ], [err]; color=freq_colors[lowercase(freq)])
+        scatter!(ax, [x], [μ]; color=freq_colors[lowercase(freq)])
         if freq == "High"
-            scatter!(ax, [x], [μ]; color=:white, kwargs..., markersize=10.0)
+            scatter!(ax, [x], [μ]; color=:white, markersize=10.0)
         end
     end
 
@@ -983,11 +956,11 @@ function plot_fig_r1b()
         ss = @subset(df_diff, :subj .== subj)
         lo = @subset(ss, :freq .== "Low")
         hi = @subset(ss, :freq .== "High")
-        lines!(ax, [1.2, 1.8], [lo.diff[1], hi.diff[1]]; color=:lightgray)
+        lines!(ax, [1.2, 1.8], [lo.diff[1], hi.diff[1]]; color=:lightgray, linewidth=1.5)
     end
-    scatter!(ax, xlo, diff_lo.diff; color=freq_colors["low"], kwargs..., markersize=10.0)
-    scatter!(ax, xhi, diff_hi.diff; color=freq_colors["high"], kwargs..., markersize=10.0)
-    scatter!(ax, xhi, diff_hi.diff; color=:white, kwargs..., markersize=3.0)
+    scatter!(ax, xlo, diff_lo.diff; color=freq_colors["low"], markersize=10.0)
+    scatter!(ax, xhi, diff_hi.diff; color=freq_colors["high"], markersize=10.0)
+    scatter!(ax, xhi, diff_hi.diff; color=:white, markersize=3.0)
 
     xlims!(ax, 0.5, 2.5)
 
@@ -1039,24 +1012,18 @@ function plot_fig_r2a()
         ss = @subset(df_ind, :freq .== freq, :task .== task)
         μ = mean(ss.threshold_mean)
         err = 1.96 * std(ss.threshold_mean)/sqrt(nrow(ss))
-        errorbars!(ax, [offset], [μ], [err]; color=freq_colors[lowercase(freq)], kwargs...)
-        scatter!(ax, [offset], [μ]; color=freq_colors[lowercase(freq)], kwargs...)
+        errorbars!(ax, [offset], [μ], [err]; color=freq_colors[lowercase(freq)])
+        scatter!(ax, [offset], [μ]; color=freq_colors[lowercase(freq)])
         if freq == "High"
-            scatter!(ax, [offset], [μ]; color=:white, kwargs..., markersize=10.0)
+            scatter!(ax, [offset], [μ]; color=:white, markersize=10.0)
         end
         x = fill(offset, nrow(ss)) .+ 0.3 .+ 0.03*randn(nrow(ss))
-        scatter!(ax, x, ss.threshold_mean; color=freq_colors[lowercase(freq)], kwargs..., markersize=10.0)
+        scatter!(ax, x, ss.threshold_mean; color=freq_colors[lowercase(freq)], markersize=10.0)
     end
     fig
 end
 
 function plot_fig_r2b()
-    kwargs = [
-        :markersize => 18.0,
-        :linewidth => 3.0,
-        :whiskerwidth => 12.0,
-    ]
-
     # Load data
     df = DataFrame(CSV.File("data/exp_pro/ripple_discrimination_extra_2024.csv"));
     df = @subset(df, in.(:subj, Ref(subjs_2024())))
@@ -1086,10 +1053,10 @@ function plot_fig_r2b()
         err = 1.96 * std(ss.diff)/sqrt(nrow(ss))
 
         # Plot means and errorbars
-        errorbars!(ax, [x], [μ], [err]; color=freq_colors[lowercase(freq)], kwargs...)
-        scatter!(ax, [x], [μ]; color=freq_colors[lowercase(freq)], kwargs...)
+        errorbars!(ax, [x], [μ], [err]; color=freq_colors[lowercase(freq)])
+        scatter!(ax, [x], [μ]; color=freq_colors[lowercase(freq)])
         if freq == "High"
-            scatter!(ax, [x], [μ]; color=:white, kwargs..., markersize=10.0)
+            scatter!(ax, [x], [μ]; color=:white, markersize=10.0)
         end
     end
 
@@ -1106,16 +1073,172 @@ function plot_fig_r2b()
         ss = @subset(df_diff, :subj .== subj)
         lo = @subset(ss, :freq .== "Low")
         hi = @subset(ss, :freq .== "High")
-        lines!(ax, [1.2, 1.8], [lo.diff[1], hi.diff[1]]; color=:lightgray)
+        lines!(ax, [1.2, 1.8], [lo.diff[1], hi.diff[1]]; color=:lightgray, linewidth=1.5)
     end
-    scatter!(ax, xlo, diff_lo.diff; color=freq_colors["low"], kwargs..., markersize=10.0)
-    scatter!(ax, xhi, diff_hi.diff; color=freq_colors["high"], kwargs..., markersize=10.0)
-    scatter!(ax, xhi, diff_hi.diff; color=:white, kwargs..., markersize=3.0)
+    scatter!(ax, xlo, diff_lo.diff; color=freq_colors["low"], markersize=10.0)
+    scatter!(ax, xhi, diff_hi.diff; color=freq_colors["high"], markersize=10.0)
+    scatter!(ax, xhi, diff_hi.diff; color=:white, markersize=3.0)
 
     xlims!(ax, 0.5, 2.5)
 
     # Add ticks
     ax.xticks = ([1, 2], ["Low", "High"])
     ax.xlabel = "Frequency"
+    fig
+end
+
+function plot_corr_exp1b_2b()
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_restricted.csv")))
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = @subset(df, :subj .!= "x43")  # exclude x43 (0 dB threshold for both detection)
+    df = @subset(df, :subj .!= "x33")  # exclude x33 (0 dB threshold for HF detection)
+
+    # Preproccess to calculate condition-wise means
+    df_pa = @chain df begin
+        groupby([:freq, :task, :n_comp, :order, :subj])
+        @combine(:threshold = mean(:threshold))
+    end
+
+    # Calculate difference scores
+    # df_diff = unstack(df_ind, [:subj, :freq], :task, :threshold)
+    # df_diff[!, :diff] .= df_diff.Task .- df_diff.Control
+    # df_diff = dropmissing(df_diff)
+    # df_diff = @select(df_diff, :subj, :freq, :diff)
+    # df_diff = unstack(df_diff, :subj, :freq, :diff)
+    # df_diff[!, :diff] .= df_diff.High .- df_diff.Low
+
+    # Load data
+    df = DataFrame(CSV.File("data/exp_pro/ripple_discrimination_extra_2024.csv"));
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = @subset(df, :subj .!= "x43")  # exclude x43 (0 dB threshold for both detection)
+    df = @subset(df, :subj .!= "x33")  # exclude x33 (0 dB threshold for HF detection)
+
+    # Compute individual and group means
+    df_r = @chain df begin
+        groupby([:freq, :task, :subj])
+        @combine(:threshold = mean(:threshold))
+    end
+
+    # Calculate difference scores
+    # df_diff = unstack(df_ind, [:subj, :freq], :task, :threshold)
+    # df_diff[!, :diff] .= df_diff.Task .- df_diff.Control
+    # df_diff = dropmissing(df_diff)
+    # df_diff = @select(df_diff, :subj, :freq, :diff)
+    # df_diff = unstack(df_diff, :subj, :freq, :diff)
+    # df_diff[!, :diff] .= df_diff.High .- df_diff.Low
+
+    # Subset relevant conditions
+    fig = Figure()
+    freqs = ["Low", "High"]
+    colors = [freq_colors["low"], freq_colors["high"]]
+    tasks = ["Control", "Task"]
+    axs = [Axis(fig[i, j]) for i in 1:2, j in 1:2]
+    for i = 1:2
+        for j = 1:2 
+            # Extract data
+            pa = @orderby(@subset(df_pa, :freq .== freqs[j], :task .== tasks[i]), :subj)
+            r = @orderby(@subset(df_r, :freq .== freqs[j], :task .== tasks[i]), :subj)
+
+            # Check
+            @assert all(pa.subj .== r.subj)
+
+            # Plot
+            scatter!(axs[i, j], pa.threshold, r.threshold, color=colors[j])
+            model = lm(hcat(ones(length(pa.threshold)), pa.threshold), r.threshold)
+            ablines!(axs[i, j], coef(model)[1], coef(model)[2]; color=colors[j])
+
+            pval = pvalue(CorrelationTest(pa.threshold, r.threshold))
+            text!(axs[i, j], [-15.0], [-5.0]; text="$pval")
+
+            # Adjust
+            xlims!(axs[i, j], -15.0, 15.0)
+            ylims!(axs[i, j], -20.0, 2.5)
+            axs[i, j].xticks = -15:5:15
+            axs[i, j].yticks = -20:5:0
+        end
+    end
+#    hidexdecorations!.(axs[1, :], ticks=false)
+    hideydecorations!.(axs[:, 2], ticks=false)
+    # Label(fig[1, 0], "Ripple threshold (dB)"; tellwidth=false, fontsize=16.0, rotation=π/2)
+#    Label(fig[1, 1:2], "Profile-analysis threshold (dB SRS)"; tellheight=false, fontsize=16.0)
+#    Label(fig[1, 3], "Level discrimination\nRipple detection"; tellheight=false, fontsize=16.0)
+#    Label(fig[2, 3], "Profile analysis\nRipple discrimination"; tellheight=false, fontsize=16.0)
+    # colgap!(fig.layout, 1, Relative(-0.08))
+    # rowgap!(fig.layout, 1, Relative(0.15))
+#    rowgap!(fig.layout, 2, Relative(-0.08))
+    fig
+end
+
+function plot_corr_diff_exp1b_2b()
+    # Load data from disk, rename "Control" and "Task" to "Level discrimination" and "Profile analysis"
+    df = DataFrame(CSV.File(projectdir("data", "exp_pro", "profile_analysis_extra_2024_restricted.csv")))
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = @subset(df, :subj .!= "x43")  # exclude x43 (0 dB threshold for both detection)
+    df = @subset(df, :subj .!= "x33")  # exclude x33 (0 dB threshold for HF detection)
+
+    # Preproccess to calculate condition-wise means
+    df_ind = @chain df begin
+        groupby([:freq, :task, :n_comp, :order, :subj])
+        @combine(:threshold = mean(:threshold))
+    end
+
+    # Calculate difference scores
+    df_diff = unstack(df_ind, [:subj, :task], :freq, :threshold)
+    df_diff[!, :diff] .= df_diff.High .- df_diff.Low
+    df_pa = df_diff
+
+    # Load data
+    df = DataFrame(CSV.File("data/exp_pro/ripple_discrimination_extra_2024.csv"));
+    df = @subset(df, in.(:subj, Ref(subjs_2024())))
+    df = @subset(df, :subj .!= "x43")  # exclude x43 (0 dB threshold for both detection)
+    df = @subset(df, :subj .!= "x33")  # exclude x33 (0 dB threshold for HF detection)
+
+    # Compute individual and group means
+    df_ind = @chain df begin
+        groupby([:freq, :task, :subj])
+        @combine(:threshold = mean(:threshold))
+    end
+
+    # Calculate difference scores
+    df_diff = unstack(df_ind, [:subj, :task], :freq, :threshold)
+    df_diff[!, :diff] .= df_diff.High .- df_diff.Low
+    df_r = df_diff
+
+    # Subset relevant conditions
+    fig = Figure()
+    tasks = ["Control", "Task"]
+    axs = [Axis(fig[i, 1]) for i in 1:2]
+    for i = 1:2
+        # Extract data
+        pa = @orderby(@subset(df_pa, :task .== tasks[i]), :subj)
+        r = @orderby(@subset(df_r, :task .== tasks[i]), :subj)
+
+        # Check
+        @assert all(pa.subj .== r.subj)
+
+        # Plot
+        scatter!(axs[i], pa.diff, r.diff)
+        model = lm(hcat(ones(length(pa.diff)), pa.diff), r.diff)
+        ablines!(axs[i], coef(model)[1], coef(model)[2])
+
+        pval = pvalue(CorrelationTest(pa.diff, r.diff))
+        text!(axs[i], [-15.0], [-5.0]; text="$pval")
+
+        # Adjust
+#        xlims!(axs[i], -15.0, 15.0)
+#        ylims!(axs[i], -20.0, 2.5)
+#        axs[i].xticks = -15:5:15
+#        axs[i].yticks = -20:5:0
+    end
+#    hidexdecorations!.(axs[1, :], ticks=false)
+#    hideydecorations!.(axs[:, 2], ticks=false)
+    # Label(fig[1, 0], "Ripple threshold (dB)"; tellwidth=false, fontsize=16.0, rotation=π/2)
+#    Label(fig[1, 1:2], "Profile-analysis threshold (dB SRS)"; tellheight=false, fontsize=16.0)
+#    Label(fig[1, 3], "Level discrimination\nRipple detection"; tellheight=false, fontsize=16.0)
+#    Label(fig[2, 3], "Profile analysis\nRipple discrimination"; tellheight=false, fontsize=16.0)
+    # colgap!(fig.layout, 1, Relative(-0.08))
+    # rowgap!(fig.layout, 1, Relative(0.15))
+#    rowgap!(fig.layout, 2, Relative(-0.08))
     fig
 end
